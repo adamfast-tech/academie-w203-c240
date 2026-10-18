@@ -116,8 +116,8 @@ main{min-width:0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-ri
 .section-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;min-width:0}
 .grid{display:grid;gap:12px}
-.g2{grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr))}
-.g3{grid-template-columns:repeat(auto-fill,minmax(min(100%,230px),1fr))}
+.g2{grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr))}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:var(--r);padding:10px 16px;border:1px solid var(--accent);background:var(--accent);color:var(--on-accent);font-weight:600;cursor:pointer;text-decoration:none;font-size:.95rem;line-height:1.2}
 .btn:hover{filter:brightness(1.08)}
 .btn.ghost{background:transparent;color:var(--accent)}
@@ -359,9 +359,229 @@ table.spec td.v{font-family:var(--f-mono);white-space:nowrap;font-variant-numeri
 .acct-dot.ok{background:var(--green)} .acct-dot.off{background:var(--amber)}
 @media (max-width:560px){.icon-btn .acct-dot{position:absolute;top:4px;right:4px}}
 
+
+/* ================= Mouvement, schémas animés, cartes mémoire ================= */
+:root{--ease:cubic-bezier(.22,1,.36,1)}
+
+/* Transitions de page (navigateurs compatibles) : seul le contenu bouge, la barre et le rail restent fixes. */
+.topbar{view-transition-name:topbar}
+.tabbar{view-transition-name:tabbar}
+::view-transition-old(root){animation:vt-out .16s ease-in both}
+::view-transition-new(root){animation:vt-in .34s var(--ease) both}
+@keyframes vt-out{to{opacity:0;transform:translateY(-6px)}}
+@keyframes vt-in{from{opacity:0;transform:translateY(12px)}}
+
+/* Cascade d'apparition (part d'un état visible, finit visible). */
+.rise{animation:rise .5s var(--ease) backwards;animation-delay:calc(var(--i,0) * 55ms)}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}}
+
+/* En-tête qui s'efface en descendant sur téléphone, barre de lecture. */
+.topbar{transition:transform .3s var(--ease)}
+.topbar.is-hidden{transform:translateY(-100%)}
+.scroll-progress{position:fixed;left:0;right:0;top:env(safe-area-inset-top,0px);height:3px;background:var(--accent);transform-origin:0 50%;transform:scaleX(var(--p,0));z-index:45;pointer-events:none;opacity:0;transition:opacity .3s}
+body.reading .scroll-progress{opacity:1}
+
+/* Retours : XP qui vole, compteur qui rebondit, toast, confettis. */
+.xp-float{position:fixed;left:0;top:0;z-index:70;pointer-events:none;font-family:var(--f-mono);font-weight:600;font-size:.98rem;padding:5px 12px;border-radius:999px;background:var(--accent);color:var(--on-accent);box-shadow:0 6px 18px rgba(19,24,30,.18);white-space:nowrap}
+.xp-pill{transition:transform .2s}
+.xp-pill.bump{animation:bump .5s var(--ease)}
+@keyframes bump{40%{transform:scale(1.18)}}
+.toast:not([hidden]){animation:toast-in .35s var(--ease)}
+@keyframes toast-in{from{opacity:0;transform:translate(-50%,12px)}}
+.confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:80}
+
+/* Micro-interactions. */
+.btn{transition:filter .15s,transform .15s}
+.btn:active{transform:scale(.97)}
+@media (hover:hover){
+  .tool-tile,.pager a{transition:transform .25s var(--ease),border-color .2s,box-shadow .25s}
+  .tool-tile:hover,.pager a:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+  .tool-tile svg{transition:transform .3s var(--ease)}
+  .tool-tile:hover svg{transform:translateX(3px)}
+}
+.opt{display:flex;gap:10px;align-items:flex-start;transition:border-color .2s,background-color .2s,transform .15s}
+.opt:active:not([disabled]){transform:scale(.985)}
+.opt-k{flex:none;width:24px;height:24px;margin-top:-1px;border-radius:50%;display:grid;place-items:center;font-family:var(--f-mono);font-size:.74rem;font-weight:600;background:var(--surface-2);color:var(--muted);transition:background-color .2s,color .2s}
+.opt:hover:not([disabled]) .opt-k{background:var(--accent);color:var(--on-accent)}
+.opt.right .opt-k{background:var(--green);color:var(--surface)}
+.opt.wrong .opt-k{background:var(--red);color:var(--surface)}
+ol.steps>li{position:relative}
+ol.steps>li:not(:last-child)::after{content:"";position:absolute;left:14px;top:34px;bottom:-10px;width:2px;background:var(--line)}
+.callout{border-left:3px solid var(--line)}
+.callout.danger{border-left-color:var(--red)} .callout.warn{border-left-color:var(--amber)} .callout.tip{border-left-color:var(--green)} .callout.w203{border-left-color:var(--accent)}
+.callout-label::before{content:"";display:inline-block;width:7px;height:7px;border-radius:2px;background:currentColor;margin-right:7px;vertical-align:1px}
+
+/* Sommaire de leçon. */
+.toc{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 24px;max-width:68ch}
+.toc .eyebrow{width:100%;margin-bottom:2px}
+.toc button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 11px;font-size:.82rem;cursor:pointer;line-height:1.25;text-align:left}
+.toc button:hover{border-color:var(--accent);color:var(--accent)}
+.prose h2{scroll-margin-top:calc(var(--head-h) + 18px)}
+
+/* Carte du parcours. */
+.route{overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;margin:6px -4px 10px;padding:6px 4px 8px;-webkit-mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 14px),transparent);mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 14px),transparent)}
+.route-track{display:flex;min-width:max-content}
+.node{position:relative;display:grid;justify-items:center;align-content:start;gap:7px;width:88px;text-decoration:none;color:var(--ink)}
+.node::before{content:"";position:absolute;top:21px;right:50%;width:100%;height:3px;background:var(--line)}
+.node:first-child::before{display:none}
+.node.done::before,.node.cur::before{background:var(--accent)}
+.dot{position:relative;z-index:1;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--accent) calc(var(--p,0) * 1%),var(--surface-2) 0)}
+.dot b{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--surface);font-family:var(--f-display);font-weight:700;font-size:1.02rem}
+.node.done .dot b{background:var(--accent);color:var(--on-accent)}
+.node.cur .dot::after{content:"";position:absolute;inset:-5px;border-radius:50%;border:2px solid var(--accent);animation:pulse 1.8s var(--ease) infinite}
+@keyframes pulse{from{transform:scale(.88);opacity:.9}to{transform:scale(1.3);opacity:0}}
+.node small{font-size:.72rem;line-height:1.2;text-align:center;color:var(--muted);max-width:84px;hyphens:auto;-webkit-hyphens:auto;overflow-wrap:break-word;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.node.cur small{color:var(--ink);font-weight:600}
+.node:hover .dot b{outline:2px solid var(--accent);outline-offset:-2px}
+
+/* Jauge d'échéance d'entretien. */
+.due-wrap{display:grid;gap:5px;min-width:0}
+.pmeter{height:4px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.pmeter i{display:block;height:100%;background:var(--muted);transform-origin:0 50%;transition:transform .6s var(--ease)}
+.pmeter.ok i{background:var(--green)} .pmeter.soon i{background:var(--amber)} .pmeter.late i{background:var(--red)}
+
+/* Cartes mémoire. */
+.fc-wrap{max-width:560px;margin:8px auto 0;display:grid;gap:14px}
+.fc-meta{display:flex;justify-content:space-between;align-items:center;font-size:.85rem;color:var(--muted)}
+.fc-box i{display:inline-block;width:18px;height:6px;border-radius:3px;background:var(--surface-2);margin-left:4px}
+.fc-box i.on{background:var(--green)}
+.fc{position:relative;height:300px;perspective:1200px;cursor:pointer;touch-action:pan-y;user-select:none;-webkit-user-select:none;transition:transform .3s var(--ease);border-radius:12px}
+.fc.drag{transition:none;cursor:grabbing}
+.fc-face{position:absolute;inset:0;border-radius:12px;padding:26px 22px;display:grid;align-content:center;justify-items:center;text-align:center;gap:10px;-webkit-backface-visibility:hidden;backface-visibility:hidden;transition:transform .6s var(--ease),border-color .2s,box-shadow .2s;border:1px solid var(--line);box-shadow:var(--shadow)}
+.fc-front{background:linear-gradient(160deg,var(--plate-a),var(--plate-b));color:var(--plate-ink)}
+.fc-front b{font-family:var(--f-display);font-size:clamp(1.8rem,1.4rem + 2vw,2.5rem);line-height:1.05;font-weight:700}
+.fc-front i{font-style:normal;font-size:.95rem;opacity:.8}
+.fc-front .eyebrow{color:inherit;opacity:.7}
+.fc-hint{position:absolute;bottom:14px;left:0;right:0;font-size:.78rem;opacity:.65}
+.fc-back{background:var(--surface);transform:rotateY(180deg)}
+.fc-back p{margin:0;font-size:1.04rem;line-height:1.55;max-width:42ch}
+.fc.flip .fc-front{transform:rotateY(-180deg)}
+.fc.flip .fc-back{transform:rotateY(0)}
+.fc[data-swipe="yes"] .fc-face{border-color:var(--green);box-shadow:0 0 0 3px var(--green-soft)}
+.fc[data-swipe="no"] .fc-face{border-color:var(--red);box-shadow:0 0 0 3px var(--red-soft)}
+.fc-in{animation:fc-in .45s var(--ease)}
+@keyframes fc-in{from{opacity:0;transform:translateY(16px) scale(.97)}}
+.fc-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.fc-actions .btn{min-height:46px;padding-inline:8px}
+.fc-help{font-size:.82rem;text-align:center;margin:0}
+.fc-stage{overflow-x:clip;padding:4px 8px 10px;margin:-4px -8px -10px}
+
+/* ---------- Schémas animés ---------- */
+.viz{container-type:inline-size;overflow:hidden;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:grid;gap:12px;margin:1.6em 0;box-shadow:var(--shadow)}
+.prose>.viz+*{margin-top:1.2em}
+.viz svg{display:block;width:100%;height:auto;overflow:visible}
+.viz>svg{max-height:380px}
+@container (max-width:560px){.viz .dg-t,.viz .dg-ts,.viz .dg-ta{font-size:17px}.viz .dg-tb{font-size:22px}.viz .bat .dg-ts{font-size:12px}}
+.viz-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:10px}
+.viz-title{font-family:var(--f-display);font-size:1.3rem;font-weight:600;line-height:1.1}
+.viz-ctrl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.viz-desc{margin:0;min-height:3.1em;font-size:.95rem}
+.viz-note{margin:0;font-size:.78rem;color:var(--muted)}
+.vbtn{border:1px solid var(--line);background:var(--surface-2);color:var(--ink);border-radius:999px;padding:7px 14px;min-height:40px;font-size:.85rem;font-weight:600;cursor:pointer;transition:border-color .2s,background-color .2s,color .2s,transform .15s}
+.vbtn:hover{border-color:var(--accent)}
+.vbtn:active{transform:scale(.96)}
+.vbtn[data-k="steer"][aria-pressed="true"],.vbtn[data-k="cmd"][aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.vtoggle{position:relative;display:inline-flex;align-items:center;gap:8px;min-height:40px;font-size:.85rem;cursor:pointer}
+.vtoggle input{position:absolute;opacity:0;width:1px;height:1px}
+.vtrack{position:relative;flex:none;width:38px;height:22px;border-radius:99px;background:var(--surface-2);border:1px solid var(--line);transition:background-color .2s,border-color .2s}
+.vtrack::after{content:"";position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:var(--muted);transition:transform .25s var(--ease),background-color .2s}
+.vtoggle input:checked+.vtrack{background:var(--red-soft);border-color:var(--red)}
+.vtoggle input:checked+.vtrack::after{transform:translateX(16px);background:var(--red)}
+.vtoggle input:focus-visible+.vtrack{outline:2px solid var(--accent);outline-offset:2px}
+.vchips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.vchip{font-family:var(--f-mono);font-size:.75rem;padding:4px 10px;border-radius:999px;background:var(--surface-2);color:var(--muted);transition:background-color .2s,color .2s}
+.vchip.on{background:var(--accent);color:var(--on-accent)}
+.vsep{color:var(--muted);font-size:.8rem}
+.viz-read{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
+.read{background:var(--surface-2);border-radius:var(--r);padding:8px 12px;display:grid;gap:2px;min-width:0}
+.read small{font-family:var(--f-mono);font-size:.7rem;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.read b{font-family:var(--f-display);font-size:1.35rem;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.15}
+.viz .good{color:var(--green)} .viz .warn{color:var(--amber)} .viz .bad{color:var(--red)}
+.vrange{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;font-size:.88rem}
+.vrange input{width:100%;accent-color:var(--accent);min-height:32px}
+.vrange span{min-width:7ch;text-align:right}
+@container (max-width:480px){.vrange{grid-template-columns:1fr auto}.vrange label{grid-column:1/-1}}
+.vmeter{height:10px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:6px}
+.vmeter i{display:block;height:100%;background:var(--accent);transform-origin:0 50%;transform:scaleX(.2);transition:transform .15s linear}
+.tmeter,.tgauge{position:relative;height:34px}
+.tmeter::before,.tgauge::before{content:"";position:absolute;left:0;right:0;top:6px;height:8px;border-radius:99px;opacity:.45}
+.tmeter::before{background:linear-gradient(90deg,var(--red) 0 10%,var(--amber) 10% 30%,var(--green) 30% 70%,var(--amber) 70% 90%,var(--red) 90%)}
+.tgauge::before{background:linear-gradient(90deg,var(--accent) 0 47.5%,var(--green) 47.5% 85%,var(--red) 85%)}
+.tmeter .z,.tgauge .zone{display:none}
+.tmeter i,.tgauge i{position:absolute;left:0;right:0;top:0;height:20px;transition:transform .35s var(--ease)}
+.tgauge i{transition:transform .2s linear}
+.tmeter i::after,.tgauge i::after{content:"";position:absolute;top:0;width:4px;height:20px;margin-left:-2px;border-radius:2px;background:var(--ink)}
+.tmeter i::after{left:50%} .tgauge i::after{left:0}
+.tmeter em,.tgauge em{position:absolute;top:20px;font-style:normal;font-family:var(--f-mono);font-size:.68rem;color:var(--muted);white-space:nowrap}
+.tmeter em:nth-of-type(1),.tgauge em:nth-of-type(1){left:0}
+.tmeter em:nth-of-type(2){left:50%;transform:translateX(-50%)}
+.tmeter em:nth-of-type(3),.tgauge em:nth-of-type(4){right:0}
+.tgauge em:nth-of-type(2){left:50%;transform:translateX(-50%)}
+.tgauge em:nth-of-type(3){left:75%;transform:translateX(-50%)}
+.vpresets{display:flex;flex-wrap:wrap;gap:6px}
+.trim-grid{display:grid;grid-template-columns:auto 1fr 1fr;gap:6px 10px;align-items:center;max-width:440px}
+.trim-grid b{font-family:var(--f-mono);font-size:.78rem;font-weight:500;color:var(--muted)}
+.trim-bars{display:grid;gap:7px}
+.tb{display:grid;grid-template-columns:86px 1fr 62px;gap:10px;align-items:center}
+.tb small{font-family:var(--f-mono);font-size:.72rem;color:var(--muted)}
+.tb span{text-align:right;font-size:.85rem}
+.tbar{position:relative;height:12px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.tbar::after{content:"";position:absolute;left:50%;top:0;bottom:0;width:2px;margin-left:-1px;background:var(--muted)}
+.tbar i{position:absolute;left:50%;top:0;bottom:0;width:50%;transform-origin:0 50%;background:var(--green);transition:transform .45s var(--ease),background-color .2s}
+.tbar i.warn{background:var(--amber)} .tbar i.bad{background:var(--red)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:var(--surface-2)}
+.seg button{border:0;background:transparent;border-radius:999px;padding:6px 12px;min-height:36px;font-size:.83rem;font-weight:600;color:var(--muted);cursor:pointer;transition:background-color .2s,color .2s}
+.seg button.on{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.bat{display:grid;gap:14px;align-items:center}
+.bat svg{max-width:320px;margin:0 auto}
+@container (min-width:560px){.bat{grid-template-columns:270px 1fr}}
+
+/* Éléments SVG des schémas. */
+.viz .flow{fill:none;stroke-linecap:round;stroke-dasharray:9 11;animation:vz-flow var(--fd,1.1s) linear infinite;transition:opacity .3s}
+@keyframes vz-flow{to{stroke-dashoffset:-40}}
+.viz .flow.off{opacity:.13;animation-play-state:paused}
+.viz .c-cold,.viz .c-cool{stroke:var(--accent)} .viz .c-warm{stroke:var(--amber)} .viz .c-hot{stroke:var(--red)} .viz .c-ret{stroke:var(--green)} .viz .c-air{stroke:var(--muted)}
+.viz .hide{opacity:0}
+.viz .leak,.viz .crack,.viz .leak-lbl{transition:opacity .3s}
+.viz .leak-lbl{fill:var(--red)}
+.viz .gas{fill-opacity:.35}
+.viz .g-in{fill:var(--accent)} .viz .g-comp{fill:var(--amber)} .viz .g-burn{fill:var(--red);fill-opacity:.9} .viz .g-ex{fill:var(--muted)}
+.viz .spark{fill:var(--amber);opacity:0}
+.viz .flame{fill:var(--amber);opacity:0}
+.viz .heat{fill:var(--red);opacity:0}
+.viz .fluid{fill:var(--accent);fill-opacity:.3}
+.viz .foam{opacity:0;transition:opacity .3s}
+.viz .foam circle,.viz .bubble{fill:var(--surface);stroke:var(--red);stroke-width:1.5}
+.viz .noise{opacity:0}
+.viz .needle{stroke:var(--ink);stroke-linecap:round}
+.viz .z-ok{stroke:var(--green)} .viz .z-warn{stroke:var(--amber)} .viz .z-bad{stroke:var(--red)}
+.viz .z-ok,.viz .z-warn,.viz .z-bad{opacity:.85}
+.viz .lamp{fill:var(--surface-2);stroke:var(--ink);stroke-width:2;transition:fill .25s,filter .25s}
+.viz.on .lamp{fill:var(--amber);filter:drop-shadow(0 0 10px var(--amber))}
+.viz .pc,.viz .pp{opacity:.13;animation-play-state:paused}
+.viz.on .pc,.viz.on .pp{opacity:1;animation-play-state:running}
+.viz .coil{transition:stroke .2s}
+.viz.on .coil{stroke:var(--accent)}
+.viz .arm{transform-box:view-box;transform-origin:370px 70px;transform:rotate(-12deg);transition:transform .25s var(--ease)}
+.viz .lever{transform-box:view-box;transform-origin:118px 30px;transform:rotate(-25deg);transition:transform .25s var(--ease)}
+.viz.on .arm,.viz.on .lever{transform:none}
+
+@media (prefers-reduced-motion:reduce){
+  .rise,.fc-in,.xp-pill.bump,.toast:not([hidden]){animation:none}
+  .node.cur .dot::after{animation:none;opacity:.6;transform:none}
+  .viz .flow{animation:none}
+  .fc,.fc-face,.topbar,.pmeter i,.tbar i,.tmeter i,.tgauge i{transition:none}
+  ::view-transition-old(root),::view-transition-new(root){animation:none}
+  .route{scroll-behavior:auto}
+}
+
+.tools{grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr))}
+@media (max-width:560px){.tools{grid-template-columns:1fr 1fr;gap:10px}.tools .tool-tile{padding:14px 12px}.tools .tool-tile b{font-size:1.08rem}.tools .tool-tile span{font-size:.8rem}}
+
 </style>
 </head>
 <body>
+<div class="scroll-progress" id="readbar" aria-hidden="true"></div>
 <header class="topbar">
   <a class="brand" href="#accueil"><b>Académie W203</b><span>C 240 · 203.061 · M112</span></a>
   <span class="spacer"></span>
@@ -683,7 +903,7 @@ W.mod({ id: 'meca', num: 2, code: 'M02', level: 1, title: 'Fondamentaux mécaniq
   { id: 'quatre-temps', title: 'Le moteur 4 temps', min: 10,
     lead: 'Tout ce qui suit repose sur ce cycle. Prends le temps de le visualiser.',
     body: `
-${fig(D.fourStroke, 'Les quatre temps. Le vilebrequin fait deux tours pour un cycle complet ; l’arbre à cames en fait un.')}
+<div data-viz="temps"></div>
 <ol>
 <li><strong>Admission</strong> : le piston descend, la soupape d’admission est ouverte, le cylindre aspire l’air (et l’essence injectée dans la tubulure).</li>
 <li><strong>Compression</strong> : soupapes fermées, le piston remonte et comprime le mélange.</li>
@@ -753,6 +973,7 @@ ${key(['Air + carburant + étincelle + compression, synchronisés.', 'λ = 1 ≈
 <li><strong>Vase d’expansion et bouchon</strong> : le circuit est pressurisé, ce qui fait monter le point d’ébullition au-dessus de 100 °C.</li>
 <li><strong>Radiateur de chauffage</strong> : le chauffage de l’habitacle récupère la chaleur du moteur.</li>
 </ul>
+<div data-viz="refroidissement"></div>
 ${w203(`<p>Sur la W203, le thermostat qui reste ouvert est très fréquent : le moteur peine à dépasser 80 °C, le chauffage tiédit, la consommation monte et le code P0128 peut apparaître ${s('frm')}. Voir la leçon « Thermostat, pompe à eau, ventilateur ».</p>`)}
 ${key(['5W-40 : 5 à froid, 40 à chaud.', 'Homologation MB obligatoire, pas seulement la viscosité.', 'Thermostat : fermé à froid, ouvert à chaud.', 'Circuit pressurisé = point d’ébullition plus haut.'])}`,
     quiz: [
@@ -855,6 +1076,7 @@ ${table(['Situation', 'Valeur', 'Source'], [
   ['Moteur tournant (charge)', '≈ 13,8 à 14,5 V', s('gen')],
   ['Pendant le démarrage', 'Ne doit pas tomber durablement sous ≈ 9,6–10 V', s('gen')]
 ])}
+<div data-viz="batterie"></div>
 ${tip(`<p>Avant de condamner un fil, mesure la tension au connecteur <strong>branché</strong> en piquant par l’arrière (sonde fine le long du fil) : c’est la seule mesure qui voit le circuit tel qu’il travaille.</p>`)}
 ${key(['Tension en parallèle, courant en série.', 'Résistance et continuité : toujours hors tension.', '12,6 V au repos, 13,8–14,5 V en charge.'])}`,
     quiz: [
@@ -888,7 +1110,7 @@ ${key(['Mesure faite circuit en marche.', '≈ 0,2 V max par connexion + ; ≈ 0
 <p>Un fusible fond quand le courant dépasse son calibre : il protège le fil, pas le consommateur. Teste-le au multimètre (continuité) plutôt qu’à l’œil. Un fusible qui saute à nouveau signale un court-circuit : ne monte jamais un calibre supérieur.</p>
 ${w203(`<p>La W203 a plusieurs boîtes : le SAM avant avec fusibles et relais dans le compartiment moteur côté gauche, une boîte en bout de planche de bord côté conducteur, et le SAM arrière dans le coffre ${s('frm')}. Le plan d’affectation des fusibles se trouve sur une carte dans la boîte ou dans WIS.</p>`)}
 <h2>Le relais</h2>
-${fig(D.relay, 'Numérotation normalisée DIN des bornes d’un relais.')}
+<div data-viz="relais"></div>
 <p>Un petit courant dans la bobine (85-86) ferme un contact qui laisse passer un gros courant (30-87). Le calculateur pilote ainsi une pompe à essence ou un ventilateur sans faire passer 20 A dans ses circuits.</p>
 <h3>Tester un relais</h3>
 ${steps([
@@ -1553,6 +1775,7 @@ ${table(['Ce que tu observes', 'Interprétation'], [
   ['Pauvre sur un seul banc', 'Cause propre à ce banc : joint de collecteur, injecteur, fuite d’échappement avant la sonde'],
   ['Riche partout', 'Débitmètre qui surestime, injecteur qui fuit, pression trop forte, filtre à air bouché']
 ])}
+<div data-viz="trims"></div>
 ${fig(D.v6, 'Disposition des cylindres du M112 vue de dessus, avant en haut. Le banc 1 est celui du cylindre 1. Numérotation et ordre d’allumage à confirmer dans WIS pour ta voiture.')}
 <p>${s('chk')} Mercedes numérote d’habitude le banc droit (sens de marche) 1-2-3 et le gauche 4-5-6. Avant de changer une bobine sur un code P0304, vérifie la numérotation dans WIS.</p>
 <h2>Le débitmètre (HFM)</h2>
@@ -1671,7 +1894,7 @@ W.mod({ id: 'm112', num: 9, code: 'M09', level: 3, title: 'Le moteur M112 en pro
   { id: 'm112-archi', title: 'Architecture du M112', min: 10,
     lead: 'Un V6 tout aluminium à trois soupapes et double allumage. Comprendre ses choix explique ses pannes.',
     body: `
-${fig(D.v6, 'Vue de dessus, avant en haut. Numérotation et ordre d’allumage habituels chez Mercedes, à confirmer dans WIS.')}
+<div data-viz="allumage"></div>
 <h2>Les choix de conception</h2>
 ${table(['Élément', 'Solution M112', 'Source'], [
   ['Bloc', 'Alliage d’aluminium avec chemises en alliage aluminium-silicium (Silitec / Alusil)', s('frm')],
@@ -1893,6 +2116,7 @@ ${key(['Caoutchouc fissuré ou couronne décalée = remplacement.', 'Trait de pe
 <li>Sur le M112 de la C 240, le thermostat se remplace avec son boîtier (référence citée : <span class="mono">112 203 02 75</span>) ${s('frm')}.</li>
 <li>Procédure : <a href="#l-p-thermostat">Projet « Remplacer le thermostat »</a>.</li>
 </ul>
+<div data-viz="refroidissement"></div>
 <h2>Pompe à eau</h2>
 <ul>
 <li>Traces de liquide séché sous la pompe ou goutte au trou témoin : joint interne qui fuit.</li>
@@ -1924,6 +2148,7 @@ ${key(['Thermostat bloqué ouvert : < 80 °C, P0128.', 'Pompe : trou témoin, tr
 ${steps(['Entrée d’air et boîtier de filtre', 'Débitmètre (HFM) : l’air est mesuré ici', 'Soufflet / conduit en caoutchouc', 'Papillon motorisé', 'Collecteur d’admission en magnésium, à longueur variable', 'Soupapes d’admission'])}
 <h2>Le soufflet d’admission</h2>
 <p>Ce conduit en accordéon entre le débitmètre et le papillon durcit et se fend avec la chaleur. Une fissure <strong>après</strong> le débitmètre fait entrer de l’air non mesuré : mélange pauvre, ralenti qui « pompe », sifflement, codes P0170/P0173, P0171/P0174 ou P0101.</p>
+<div data-viz="admission"></div>
 ${w203(`<p>Ton soufflet s’est fendu en octobre 2026. Le remplacement est détaillé dans <a href="#l-p-soufflet">Projet « Remplacer le soufflet d’admission »</a>. Profites-en pour nettoyer le papillon.</p>`)}
 <h2>Le débitmètre (HFM)</h2>
 <ul>
@@ -2179,6 +2404,7 @@ ${table(['Composant', 'Rôle', 'Faiblesses'], [
   ['Flexible de retour (basse pression)', 'Retour vers le réservoir', 'Colliers, caoutchouc durci'],
   ['Crémaillère et valve rotative', 'La valve dose l’assistance selon l’effort au volant', 'Joints internes : fuite dans les soufflets']
 ])}
+<div data-viz="direction"></div>
 <h2>Côté aspiration, côté pression</h2>
 <p>Entre le réservoir et la pompe, le circuit est en <strong>aspiration</strong>. Une fuite à cet endroit laisse souvent <strong>entrer de l’air</strong> plutôt que sortir du liquide : bruit, grincement, mousse dans le réservoir, sans forcément de goutte au sol ${s('gen')}. Côté pression, au contraire, une fuite projette du liquide.</p>
 <h2>La couleur du liquide</h2>
@@ -2274,6 +2500,7 @@ ${key(['Fluide confirmé par VIN.', 'Rinçage par le retour = le plus complet.',
 <li><strong>La couleur brune</strong> vient d’un liquide oxydé, d’un mélange de deux familles, ou des deux.</li>
 <li><strong>Le vert</strong> correspond à la famille MB 345.0. Si ta voiture est prescrite en 345.0, comme l’indiquent des propriétaires de W203 de 2001 ${s('frm')}, le garage a mis le bon type. Le problème est le mélange avec ce qu’il y avait avant, qui est inconnu.</li>
 </ol>
+<div data-viz="direction"></div>
 <h2>Le plan</h2>
 ${steps([
   '<strong>Confirmer la prescription</strong> par VIN au comptoir pièces Mercedes ou via l’EPC : 345.0 ou 236.3.',
@@ -2557,6 +2784,7 @@ ${table(['Mesure', 'Conditions', 'Valeur attendue', 'Source'], [
   ['Tension de charge', 'Ralenti, puis 2 000 tr/min avec phares, ventilation et lunette chauffante', '≈ 13,8 à 14,5 V, stable', s('gen')],
   ['Ondulation (V alternatif)', 'Multimètre en V~ aux bornes, moteur tournant', 'Faible (quelques dixièmes de volt au plus)', s('gen')]
 ])}
+<div data-viz="batterie"></div>
 <h2>Interpréter</h2>
 <ul>
 <li>Tension de charge au-dessus de 15 V : régulateur défaillant, la batterie va souffrir.</li>
@@ -2786,6 +3014,7 @@ ${steps([
   'Démarre : ralenti stable, pas de sifflement. Efface les codes de mélange s’il y en avait.',
   'Dans les jours suivants, surveille les corrections de mélange : elles doivent revenir vers 0 ± 10 %.'
 ])}
+<div data-viz="admission"></div>
 ${tip(`<p>Si le ralenti reste instable après le remplacement, fais un test à la fumée : l’âge des durites voisines rend une autre fuite probable.</p>`)}
 ${key(['Photos et repères avant dépose.', 'Embouts emboîtés à fond, colliers fermes.', 'Corrections de mélange à surveiller ensuite.'])}`,
     quiz: [
@@ -3304,6 +3533,530 @@ T({ id: 'freins', title: 'Freinage', desc: 'Pédale molle, voiture qui tire, bru
 } });
 })();
 
+/* Schémas animés et interactifs de l'Académie W203. Code original, aucune dépendance. */
+window.Viz = (function () {
+  'use strict';
+  const RM = matchMedia('(prefers-reduced-motion: reduce)');
+  const reduced = () => RM.matches;
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const f1 = (v) => (Math.round(v * 10) / 10).toFixed(1).replace('.', ',');
+  const S = (k) => window.W203.h.s(k);
+  let uid = 0;
+
+  /* Boucle d'animation : en pause hors écran, arrêtée quand l'élément quitte la page. */
+  function loop(el, step, autoplay) {
+    let raf = 0, vis = true, on = !!autoplay && !reduced(), last = 0;
+    const tick = (now) => {
+      raf = 0;
+      if (!el.isConnected) { io.disconnect(); return; }
+      const dt = last ? Math.min(0.05, (now - last) / 1000) : 0; last = now;
+      step(dt);
+      if (on && vis) raf = requestAnimationFrame(tick); else last = 0;
+    };
+    const kick = () => { if (!raf && on && vis) raf = requestAnimationFrame(tick); };
+    const io = new IntersectionObserver((es) => { vis = es[0].isIntersecting; kick(); });
+    io.observe(el); step(0); kick();
+    return { play() { on = true; kick(); }, pause() { on = false; }, get on() { return on; } };
+  }
+  const head = (title, ctrl) => `<div class="viz-head"><div><p class="eyebrow">Schéma animé</p><div class="viz-title">${title}</div></div><div class="viz-ctrl">${ctrl || ''}</div></div>`;
+  const note = (t) => `<p class="viz-note">${t}</p>`;
+  const playBtn = '<button class="vbtn" type="button" data-k="play">Pause</button>';
+  function bindPlay(el, lp) {
+    const b = el.querySelector('[data-k="play"]'); if (!b) return;
+    const sync = () => { b.textContent = lp.on ? 'Pause' : 'Lecture'; b.setAttribute('aria-pressed', lp.on ? 'false' : 'true'); };
+    b.addEventListener('click', () => { lp.on ? lp.pause() : lp.play(); sync(); }); sync();
+  }
+  const toggle = (id, label, on) => `<label class="vtoggle" for="${id}"><input type="checkbox" id="${id}"${on ? ' checked' : ''}><span class="vtrack" aria-hidden="true"></span>${label}</label>`;
+
+  const V = {};
+
+  /* ---------------- 1. Le cycle à quatre temps ---------------- */
+  V.temps = {
+    title: 'Le cycle à quatre temps', lessons: ['quatre-temps'],
+    html() {
+      const ph = ['Admission', 'Compression', 'Combustion', 'Échappement'];
+      return head(this.title, playBtn + '<button class="vbtn" type="button" data-k="next">Temps suivant</button>') +
+      `<div class="vchips">${ph.map((t, i) => `<span class="vchip" data-ph="${i}">${i + 1} · ${t}</span>`).join('')}</div>
+      <svg viewBox="0 0 360 304" role="img" aria-label="Piston, soupapes et vilebrequin animés">
+        <path class="flow c-cold flow-in" d="M30 49 H100"/><path class="flow c-air flow-ex" d="M260 49 H330"/>
+        <rect class="gas" x="112" y="60" width="136" height="50"/>
+        <path class="dg-l" d="M110 60 V238 M250 60 V238" stroke-width="3"/>
+        <rect class="dg-f" x="96" y="38" width="168" height="22" rx="3"/>
+        <g class="valve-in"><line class="dg-l" x1="140" y1="20" x2="140" y2="60"/><line class="dg-l" x1="126" y1="61" x2="154" y2="61" stroke-width="5"/></g>
+        <g class="valve-ex"><line class="dg-l" x1="220" y1="20" x2="220" y2="60"/><line class="dg-l" x1="206" y1="61" x2="234" y2="61" stroke-width="5"/></g>
+        <rect class="dg-f" x="175" y="12" width="10" height="30" rx="2"/>
+        <circle class="spark" cx="180" cy="68" r="8"/>
+        <line class="dg-l rod" x1="180" y1="120" x2="180" y2="228" stroke-width="5"/>
+        <g class="piston"><rect class="dg-fa" x="114" y="0" width="132" height="36" rx="3"/><line class="dg-m" x1="114" y1="9" x2="246" y2="9"/><line class="dg-m" x1="114" y1="16" x2="246" y2="16"/><circle class="dg-dot" cx="180" cy="14" r="4"/></g>
+        <circle class="dg-m" cx="180" cy="262" r="34"/><circle class="dg-dot crankpin" cx="180" cy="228" r="6"/>
+        <text class="dg-ts" x="30" y="40">admission</text><text class="dg-ts" x="330" y="40" text-anchor="end">échappement</text>
+        <text class="dg-t ang" x="350" y="298" text-anchor="end">0°</text><text class="dg-ts" x="10" y="298">vilebrequin</text>
+      </svg>
+      <p class="viz-desc" data-desc></p>${note('Schéma de principe. Un cycle complet = 720° de vilebrequin, soit deux tours. ' + S('gen'))}`;
+    },
+    init(el) {
+      const q = (s) => el.querySelector(s);
+      const piston = q('.piston'), rod = q('.rod'), pin = q('.crankpin'), gas = q('.gas'), vin = q('.valve-in'), vex = q('.valve-ex'), spark = q('.spark'), fin = q('.flow-in'), fex = q('.flow-ex'), ang = q('.ang'), desc = q('[data-desc]');
+      const chips = [...el.querySelectorAll('.vchip')];
+      const D = ['Le piston descend, la soupape d’admission est ouverte : le cylindre aspire l’air et l’essence.', 'Soupapes fermées, le piston remonte et comprime le mélange.', 'Les deux bougies allument le mélange : la pression repousse le piston. C’est le seul temps moteur.', 'La soupape d’échappement s’ouvre, le piston remonte et chasse les gaz brûlés.'];
+      const r = 34, l = 104, cx = 180, cy = 262; let th = 0;
+      const draw = () => {
+        const t = (th * Math.PI) / 180, sx = r * Math.sin(t), cc = r * Math.cos(t);
+        const pinY = cy - (cc + Math.sqrt(l * l - sx * sx)), top = pinY - 14, ph = Math.floor((th % 720) / 180);
+        piston.setAttribute('transform', `translate(0 ${top.toFixed(1)})`);
+        rod.setAttribute('y1', pinY.toFixed(1)); rod.setAttribute('x2', (cx + sx).toFixed(1)); rod.setAttribute('y2', (cy - cc).toFixed(1));
+        pin.setAttribute('cx', (cx + sx).toFixed(1)); pin.setAttribute('cy', (cy - cc).toFixed(1));
+        gas.setAttribute('height', Math.max(0, top - 60).toFixed(1));
+        gas.setAttribute('class', 'gas ' + ['g-in', 'g-comp', 'g-burn', 'g-ex'][ph]);
+        gas.style.opacity = ph === 2 ? (0.75 - 0.5 * ((th - 360) / 180)).toFixed(2) : '';
+        const li = ph === 0 ? Math.sin((Math.PI * th) / 180) : 0, le = ph === 3 ? Math.sin((Math.PI * (th - 540)) / 180) : 0;
+        vin.setAttribute('transform', `translate(0 ${(li * 14).toFixed(1)})`); vex.setAttribute('transform', `translate(0 ${(le * 14).toFixed(1)})`);
+        const s = th > 340 && th < 380 ? 1 - Math.abs(th - 360) / 20 : 0;
+        spark.style.opacity = s.toFixed(2); spark.setAttribute('r', (6 + s * 12).toFixed(1));
+        fin.classList.toggle('off', ph !== 0); fex.classList.toggle('off', ph !== 3);
+        ang.textContent = Math.round(th % 720) + '°';
+        chips.forEach((c, i) => c.classList.toggle('on', i === ph));
+        if (desc._ph !== ph) { desc.textContent = D[ph]; desc._ph = ph; }
+      };
+      const lp = loop(el, (dt) => { th = (th + 160 * dt) % 720; draw(); }, true);
+      bindPlay(el, lp);
+      q('[data-k="next"]').addEventListener('click', () => { lp.pause(); el.querySelector('[data-k="play"]').textContent = 'Lecture'; th = ((Math.floor(th / 180) + 1) * 180 + 90) % 720; draw(); });
+    }
+  };
+
+  /* ---------------- 2. Ordre d'allumage du V6 ---------------- */
+  V.allumage = {
+    title: 'L’ordre d’allumage du V6', lessons: ['m112-archi', 'allumage'],
+    html() {
+      const cyl = (n, x, y) => `<g data-c="${n}"><circle class="dg-fa" cx="${x}" cy="${y}" r="30"/><circle class="flame" cx="${x}" cy="${y}" r="30"/><text class="dg-tb" x="${x}" y="${y + 6}" text-anchor="middle">${n}</text></g>`;
+      return head(this.title, playBtn) +
+      `<svg viewBox="0 0 640 340" role="img" aria-label="Cylindres du V6 qui s’allument dans l’ordre">
+        <rect class="dg-f" x="250" y="56" width="140" height="250" rx="8"/>
+        <text class="dg-ts" x="320" y="44" text-anchor="middle">AVANT</text>
+        <circle class="dg-m" cx="320" cy="180" r="38"/><line class="dg-a crank" x1="320" y1="180" x2="320" y2="146"/>
+        <text class="dg-ts" x="320" y="236" text-anchor="middle">vilebrequin</text>
+        ${cyl(4, 190, 96)}${cyl(5, 190, 180)}${cyl(6, 190, 264)}${cyl(1, 450, 96)}${cyl(2, 450, 180)}${cyl(3, 450, 264)}
+        <text class="dg-t" x="190" y="322" text-anchor="middle">Banc gauche</text><text class="dg-t" x="450" y="322" text-anchor="middle">Banc droit (banc 1)</text>
+      </svg>
+      <div class="vchips">${[1, 4, 3, 6, 2, 5].map((n) => `<span class="vchip" data-n="${n}">${n}</span>`).join('<span class="vsep">→</span>')}</div>
+      <p class="viz-desc" data-desc></p>${note('Une combustion tous les 120° de vilebrequin. Numérotation et ordre habituels chez Mercedes, à confirmer dans WIS ' + S('chk'))}`;
+    },
+    init(el) {
+      const O = [1, 4, 3, 6, 2, 5];
+      const flames = {}; el.querySelectorAll('[data-c]').forEach((g) => { flames[g.dataset.c] = g.querySelector('.flame'); });
+      const chips = {}; el.querySelectorAll('.vchip').forEach((c) => { chips[c.dataset.n] = c; });
+      const crank = el.querySelector('.crank'), desc = el.querySelector('[data-desc]'); let th = 0;
+      const draw = () => {
+        let cur = 0;
+        O.forEach((n, k) => {
+          const age = (th - k * 120 + 720) % 720, v = Math.max(0, 1 - age / 110);
+          flames[n].style.opacity = v.toFixed(2);
+          if (age < 120) cur = n;
+        });
+        Object.keys(chips).forEach((n) => chips[n].classList.toggle('on', +n === cur));
+        const a = ((th % 360) * Math.PI) / 180;
+        crank.setAttribute('x2', (320 + 34 * Math.sin(a)).toFixed(1)); crank.setAttribute('y2', (180 - 34 * Math.cos(a)).toFixed(1));
+        if (desc._c !== cur) { desc.textContent = 'Combustion dans le cylindre ' + cur + ' · vilebrequin à ' + Math.round(th % 720) + '°'; desc._c = cur; }
+      };
+      const lp = loop(el, (dt) => { th = (th + 200 * dt) % 720; draw(); }, true);
+      bindPlay(el, lp);
+    }
+  };
+
+  /* ---------------- 3. Admission et fissure du soufflet ---------------- */
+  V.admission = {
+    title: 'Air mesuré, air non mesuré', lessons: ['admission', 'p-soufflet', 'live-data'],
+    html() {
+      const id = 'vz' + (++uid);
+      return head(this.title, toggle(id + '-leak', 'Fissure dans le soufflet', true)) +
+      `<svg viewBox="0 0 680 230" role="img" aria-label="Chemin de l’air de l’entrée aux cylindres">
+        <path class="flow c-cold main" d="M0 130 H600" stroke-width="5"/>
+        <path class="flow c-hot leak" d="M282 18 V106" stroke-width="4"/>
+        <path class="flow c-hot leak" d="M290 137 H600" stroke-width="3"/>
+        <rect class="dg-f" x="16" y="92" width="86" height="76" rx="6"/><path class="dg-m" d="M30 98 V162 M44 98 V162 M58 98 V162 M72 98 V162 M86 98 V162"/>
+        <rect class="dg-fa" x="138" y="108" width="54" height="44" rx="5"/>
+        <path class="dg-l" d="M218 112 L233 104 L248 112 L263 104 L278 112 L293 104 L308 112 L328 112 M218 148 L233 156 L248 148 L263 156 L278 148 L293 156 L308 148 L328 148 M218 112 V148 M328 112 V148"/>
+        <path class="dg-r crack" d="M276 98 l5 6 l-4 3 l6 5"/>
+        <circle class="dg-f" cx="378" cy="130" r="22"/><line class="dg-l plate" x1="360" y1="130" x2="396" y2="130" stroke-width="3"/>
+        <rect class="dg-f" x="428" y="88" width="136" height="84" rx="8"/>
+        <rect class="dg-fa" x="596" y="94" width="72" height="72" rx="8"/>
+        <text class="dg-ts" x="59" y="186" text-anchor="middle">filtre</text><text class="dg-ts" x="165" y="186" text-anchor="middle">débitmètre</text>
+        <text class="dg-ts" x="273" y="186" text-anchor="middle">soufflet</text><text class="dg-ts" x="378" y="186" text-anchor="middle">papillon</text>
+        <text class="dg-ts" x="496" y="186" text-anchor="middle">collecteur</text><text class="dg-ts" x="632" y="186" text-anchor="middle">cylindres</text>
+        <text class="dg-ta" x="165" y="84" text-anchor="middle">air mesuré</text><text class="dg-t leak-lbl" x="292" y="22">air non mesuré</text>
+      </svg>
+      <div class="vrange"><label for="${id}-rpm">Régime moteur</label><input type="range" id="${id}-rpm" min="750" max="3000" step="50" value="750"><span class="mono tnum" data-rpm>750 tr/min</span></div>
+      <div class="viz-read"><div class="read"><small>Air vu par le débitmètre</small><b data-m>—</b></div><div class="read"><small>Air réellement aspiré</small><b data-a>—</b></div><div class="read"><small>Correction de mélange</small><b data-t>—</b></div></div>
+      <div class="tmeter" aria-hidden="true"><span class="z ok"></span><i data-bar></i><em>−25 %</em><em>0</em><em>+25 %</em></div>
+      <p class="viz-desc" data-desc></p>${note('Valeurs illustratives d’ordre de grandeur, pas des mesures de ta voiture. Le principe est vrai sur tout moteur à débitmètre ' + S('gen'))}`;
+    },
+    init(el) {
+      const leak = el.querySelector('input[type="checkbox"]'), rpm = el.querySelector('input[type="range"]');
+      const q = (s) => el.querySelector(s);
+      const upd = () => {
+        const r = +rpm.value, f = (r - 750) / 2250, on = leak.checked;
+        const m = 3.5 + f * 9.5, lk = on ? 0.75 - f * 0.35 : 0, trim = (lk / m) * 100;
+        q('[data-rpm]').textContent = r.toLocaleString('fr-FR') + ' tr/min';
+        q('[data-m]').textContent = f1(m) + ' g/s'; q('[data-a]').textContent = f1(m + lk) + ' g/s';
+        q('[data-t]').textContent = (trim > 0.05 ? '+' : '') + f1(trim) + ' %';
+        q('[data-t]').className = trim > 20 ? 'bad' : trim > 10 ? 'warn' : 'good';
+        q('[data-bar]').style.transform = `translateX(${(clamp(trim, -25, 25) / 25) * 50}%)`;
+        el.querySelectorAll('.leak,.crack,.leak-lbl').forEach((x) => x.classList.toggle('hide', !on));
+        el.style.setProperty('--fd', (1.5 - f * 1.1).toFixed(2) + 's');
+        q('.plate').setAttribute('transform', `rotate(${-(8 + f * 34).toFixed(1)} 378 130)`);
+        q('[data-desc]').textContent = !on ? 'Circuit étanche : tout l’air passe par le débitmètre, le calculateur dose juste.' :
+          trim > 20 ? 'Au ralenti, la fuite pèse lourd face au peu d’air mesuré : correction au-delà de 20 %, code d’adaptation probable (P0170/P0173).' :
+          trim > 10 ? 'Correction forte : ralenti qui « pompe », sifflement possible.' : 'En charge, la même fuite ne représente presque plus rien : la correction revient dans la plage normale. D’où le diagnostic « pauvre au ralenti seulement ».';
+      };
+      leak.addEventListener('change', upd); rpm.addEventListener('input', upd); upd();
+    }
+  };
+
+  /* ---------------- 4. Circuit de refroidissement ---------------- */
+  V.refroidissement = {
+    title: 'Le circuit de refroidissement', lessons: ['lubri-refroid', 'refroid-m112', 'p-thermostat'],
+    html() {
+      const id = 'vz' + (++uid);
+      return head(this.title, '<button class="vbtn" type="button" data-k="cold">Démarrer à froid</button>' + toggle(id + '-stuck', 'Thermostat bloqué ouvert', false)) +
+      `<svg viewBox="0 0 680 320" role="img" aria-label="Circulation du liquide de refroidissement">
+        <path class="flow c-cool p-a" d="M250 228 V200 H220" stroke-width="5"/>
+        <path class="flow c-warm p-b" d="M180 110 V70 H300" stroke-width="5"/>
+        <path class="flow c-warm p-c" d="M356 70 H470" stroke-width="5"/>
+        <path class="flow c-cool p-d" d="M470 250 H272" stroke-width="5"/>
+        <path class="flow c-warm p-e" d="M328 88 V236 H268" stroke-width="5"/>
+        <path class="flow c-warm p-f" d="M80 220 V262 M120 277 H250 V272" stroke-width="4"/>
+        <rect class="dg-f" x="40" y="110" width="180" height="110" rx="8"/><rect class="heat" x="40" y="110" width="180" height="110" rx="8"/>
+        <text class="dg-tb" x="130" y="160" text-anchor="middle">Moteur</text><text class="dg-ts" x="130" y="180" text-anchor="middle">bloc + culasses</text>
+        <circle class="dg-f" cx="250" cy="250" r="22"/><g class="imp"><path class="dg-l" d="M250 236 V264 M236 250 H264"/></g>
+        <rect class="dg-f" x="300" y="52" width="56" height="36" rx="6"/><line class="dg-l tval" x1="310" y1="70" x2="346" y2="70" stroke-width="4"/>
+        <rect class="dg-f" x="470" y="50" width="150" height="210" rx="6"/><path class="dg-m" d="M490 58 V252 M510 58 V252 M530 58 V252 M550 58 V252 M570 58 V252 M590 58 V252 M610 58 V252"/>
+        <circle class="dg-m" cx="545" cy="155" r="46"/><g class="fan"><path class="dg-fa" d="M545 155 L545 113 Q570 125 545 155 Z M545 155 L581 176 Q560 194 545 155 Z M545 155 L509 176 Q512 146 545 155 Z"/></g>
+        <rect class="dg-f" x="40" y="262" width="80" height="30" rx="4"/>
+        <text class="dg-ts" x="250" y="296" text-anchor="middle">pompe à eau</text><text class="dg-ts" x="328" y="44" text-anchor="middle">thermostat</text>
+        <text class="dg-ts" x="545" y="282" text-anchor="middle">radiateur + ventilateur</text><text class="dg-ts" x="80" y="310" text-anchor="middle">chauffage</text>
+        <text class="dg-ts" x="336" y="160">dérivation</text>
+      </svg>
+      <div class="viz-read"><div class="read"><small>Température moteur</small><b data-temp>—</b></div><div class="read"><small>Thermostat</small><b data-th>—</b></div><div class="read"><small>Ventilateur</small><b data-fan>—</b></div></div>
+      <div class="tgauge" aria-hidden="true"><span class="zone"></span><i data-needle></i><em>40</em><em>80</em><em>100</em><em>120 °C</em></div>
+      <p class="viz-desc" data-desc></p>${note('Simulation de principe accélérée : températures illustratives. La température d’ouverture réelle est celle de ton thermostat ' + S('gen'))}`;
+    },
+    init(el) {
+      const q = (s) => el.querySelector(s), stuck = el.querySelector('input[type="checkbox"]');
+      let T = 20, fan = false, ang = 0, fanA = 0;
+      const open = () => stuck.checked ? 1 : clamp((T - 85) / 15, 0, 1);
+      const draw = () => {
+        const o = open();
+        q('.p-c').classList.toggle('off', o < 0.05); q('.p-d').classList.toggle('off', o < 0.05);
+        q('.p-e').classList.toggle('off', o > 0.95);
+        q('.p-c').style.opacity = o < 0.05 ? '' : (0.35 + 0.65 * o).toFixed(2);
+        q('.tval').setAttribute('transform', `rotate(${(o * 80).toFixed(0)} 328 70)`);
+        q('.heat').style.opacity = clamp((T - 20) / 90, 0, 1) * 0.55;
+        q('.imp').setAttribute('transform', `rotate(${ang.toFixed(0)} 250 250)`);
+        q('.fan').setAttribute('transform', `rotate(${fanA.toFixed(0)} 545 155)`);
+        q('[data-temp]').textContent = Math.round(T) + ' °C';
+        q('[data-temp]').className = T > 108 ? 'bad' : T >= 78 ? 'good' : 'warn';
+        q('[data-th]').textContent = o < 0.05 ? 'Fermé' : o > 0.95 ? 'Ouvert' : 'Ouvert à ' + Math.round(o * 100) + ' %';
+        q('[data-fan]').textContent = fan ? 'En marche' : 'Arrêté';
+        q('[data-needle]').style.transform = `translateX(${(clamp((T - 40) / 80, 0, 1) * 100).toFixed(1)}%)`;
+        const d = q('[data-desc]');
+        d.textContent = stuck.checked ? (T < 75 ? 'Thermostat bloqué ouvert : tout le liquide passe par le radiateur dès le départ. Le moteur plafonne vers 70 °C : chauffage tiède, surconsommation, code P0128. La panne chronique de la W203.' : 'Thermostat bloqué ouvert : le moteur chauffe très lentement.')
+          : o < 0.05 ? 'Moteur froid : le thermostat est fermé, le liquide tourne en petit circuit par la dérivation et le chauffage. Le moteur monte vite en température.'
+          : fan ? 'À l’arrêt ou par forte chaleur, le ventilateur électrique prend le relais pour refroidir le radiateur.' : 'Le thermostat s’ouvre progressivement et dose le passage par le radiateur : la température se stabilise.';
+      };
+      const lp = loop(el, (dt) => {
+        const k = 0.08 * (fan ? 1.6 : 1), sim = dt * 2.2;
+        T += (4 - k * open() * (T - 20) - 0.004 * (T - 20)) * sim;
+        if (T > 100) fan = true; else if (T < 97) fan = false;
+        ang = (ang + 600 * dt) % 360; if (fan) fanA = (fanA + 900 * dt) % 360;
+        draw();
+      }, true);
+      const restart = () => { T = 20; fan = false; lp.play(); draw(); };
+      q('[data-k="cold"]').addEventListener('click', restart);
+      stuck.addEventListener('change', restart);
+      if (reduced()) { T = 95; draw(); }
+    }
+  };
+
+  /* ---------------- 5. Direction assistée ---------------- */
+  V.direction = {
+    title: 'Le circuit de direction assistée', lessons: ['da-principe', 'da-cas', 'da-diag'],
+    html() {
+      const id = 'vz' + (++uid);
+      return head(this.title, '<button class="vbtn" type="button" data-k="steer" aria-pressed="false">Braquer</button>' + toggle(id + '-air', 'Prise d’air côté aspiration', false)) +
+      `<svg viewBox="0 0 680 290" role="img" aria-label="Circulation du liquide de direction assistée">
+        <path class="flow c-cool p-s" d="M105 120 V190" stroke-width="5"/>
+        <path class="flow c-hot p-h" d="M135 220 H300 V170 H440" stroke-width="5"/>
+        <path class="flow c-ret p-r" d="M500 170 H560 V100 H180 V80 H160" stroke-width="5"/>
+        <path class="circuit" d="M105 120 V190 M135 220 H300 V170 H440 M500 170 H560 V100 H180 V80 H160" fill="none" stroke="none"/>
+        <rect class="dg-f" x="50" y="40" width="110" height="80" rx="8"/><rect class="fluid" x="56" y="66" width="98" height="48" rx="4"/>
+        <g class="foam"><circle cx="70" cy="66" r="5"/><circle cx="86" cy="64" r="4"/><circle cx="102" cy="66" r="6"/><circle cx="120" cy="64" r="4"/><circle cx="138" cy="66" r="5"/></g>
+        <circle class="dg-f" cx="105" cy="220" r="30"/><g class="vanes"><path class="dg-l" d="M105 196 V244 M81 220 H129 M88 203 L122 237 M122 203 L88 237"/></g>
+        <g class="noise"><path class="dg-r" d="M44 200 q-10 20 0 40 M30 192 q-16 28 0 56"/></g>
+        <rect class="dg-fa" x="440" y="150" width="60" height="40" rx="6"/><line class="dg-l" x1="470" y1="190" x2="470" y2="210"/>
+        <rect class="dg-f" x="360" y="210" width="280" height="30" rx="6"/><rect class="dg-fa rp" x="488" y="213" width="24" height="24" rx="3"/>
+        <path class="dg-l" d="M360 225 H330 M640 225 H668"/>
+        <g class="bubbles"></g>
+        <text class="dg-ts" x="105" y="32" text-anchor="middle">réservoir + filtre</text><text class="dg-ts" x="105" y="272" text-anchor="middle">pompe</text>
+        <text class="dg-t" x="116" y="160">aspiration</text><text class="dg-t" x="170" y="210">haute pression</text><text class="dg-t" x="360" y="92">retour</text>
+        <text class="dg-ts" x="470" y="142" text-anchor="middle">valve</text><text class="dg-ts" x="500" y="262" text-anchor="middle">crémaillère</text>
+      </svg>
+      <div class="viz-read"><div class="read"><small>Assistance</small><div class="vmeter"><i data-p></i></div></div><div class="read"><small>État</small><b data-st>—</b></div></div>
+      <p class="viz-desc" data-desc></p>${note('Schéma de principe ' + S('gen') + '. Une fuite côté aspiration fait entrer de l’air au lieu de laisser sortir du liquide.')}`;
+    },
+    init(el) {
+      const q = (s) => el.querySelector(s), air = el.querySelector('input[type="checkbox"]'), steer = q('[data-k="steer"]');
+      const path = q('.circuit'), bub = q('.bubbles'), N = 14; let len = 0;
+      try { len = path.getTotalLength(); } catch (e) { len = 0; }
+      for (let i = 0; i < N; i++) { const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle'); c.setAttribute('r', 3 + (i % 3)); c.setAttribute('class', 'bubble'); bub.appendChild(c); }
+      const cs = [...bub.children]; let t = 0, ang = 0, pos = 0, st = false, jitter = 0;
+      const draw = () => {
+        const a = air.checked;
+        bub.style.display = a && len ? '' : 'none'; q('.foam').style.opacity = a ? 1 : 0; q('.noise').style.opacity = a ? (0.5 + 0.5 * Math.sin(t * 9)).toFixed(2) : 0;
+        if (a && len) cs.forEach((c, i) => { const p = path.getPointAtLength(((t * 70 + (i * len) / N) % len)); c.setAttribute('cx', p.x.toFixed(1)); c.setAttribute('cy', p.y.toFixed(1)); });
+        q('.vanes').setAttribute('transform', `rotate(${ang.toFixed(0)} 105 220)`);
+        q('.rp').setAttribute('transform', `translate(${(pos * 90).toFixed(1)} 0)`);
+        const p = (st ? 0.85 : 0.2) * (a ? 0.75 + 0.25 * jitter : 1);
+        q('[data-p]').style.transform = `scaleX(${p.toFixed(2)})`;
+        q('[data-st]').textContent = a ? 'Air dans le circuit' : 'Circuit sain'; q('[data-st]').className = a ? 'bad' : 'good';
+        el.style.setProperty('--fd', st ? '0.45s' : '1.1s');
+        q('[data-desc]').textContent = a ? 'L’air aspiré fait mousser le liquide : grincement au braquage, assistance irrégulière, niveau qui semble monter. Cherche l’entrée d’air côté aspiration (durite et colliers entre réservoir et pompe), souvent sans goutte au sol.'
+          : st ? 'En braquant, la valve envoie la haute pression d’un côté du piston de crémaillère : l’assistance aide la roue à tourner.' : 'Volant au centre : la pompe débite, la valve renvoie presque tout au réservoir. Peu de pression.';
+      };
+      const lp = loop(el, (dt) => {
+        t += dt; ang = (ang + (st ? 900 : 500) * dt) % 360;
+        pos += ((st ? 1 : 0) - pos) * Math.min(1, dt * 4); jitter = Math.random(); draw();
+      }, true);
+      steer.addEventListener('click', () => { st = !st; steer.setAttribute('aria-pressed', st); steer.textContent = st ? 'Revenir au centre' : 'Braquer'; if (!lp.on) { pos = st ? 1 : 0; draw(); } });
+      air.addEventListener('change', draw);
+    }
+  };
+
+  /* ---------------- 6. Le relais ---------------- */
+  V.relais = {
+    title: 'Le relais, commande et puissance', lessons: ['relais'],
+    html() {
+      return head(this.title, '<button class="vbtn" type="button" data-k="cmd" aria-pressed="false">Actionner la commande</button>') +
+      `<svg viewBox="0 0 640 260" role="img" aria-label="Relais avec circuit de commande et circuit de puissance">
+        <path class="flow c-cold pc" d="M40 30 H118 M160 30 H270 V48 M270 200 V226" stroke-width="4"/>
+        <path class="flow c-hot pp" d="M370 18 V48 M370 200 V232 H540 V148 M540 92 V60 H600 V232" stroke-width="4"/>
+        <rect class="dg-f" x="220" y="48" width="200" height="152" rx="10"/>
+        <path class="dg-l coil" d="M270 70 v14 c14 0 14 12 0 12 c14 0 14 12 0 12 c14 0 14 12 0 12 c14 0 14 12 0 12 v26" stroke-width="2.4"/>
+        <line class="dg-l arm" x1="370" y1="70" x2="370" y2="150" stroke-width="3"/><circle class="dg-dot" cx="370" cy="70" r="4"/>
+        <path class="dg-l" d="M362 152 H378 M370 152 V200" stroke-width="3"/>
+        <line class="dg-l lever" x1="118" y1="30" x2="160" y2="30" stroke-width="3"/><circle class="dg-dot" cx="118" cy="30" r="4"/>
+        <circle class="lamp" cx="540" cy="120" r="28"/><path class="dg-l" d="M526 120 q7 -14 14 0 q7 14 14 0"/>
+        <path class="dg-l" d="M258 234 H282 M262 240 H278 M266 246 H274 M588 240 H612 M592 246 H608 M596 252 H604"/>
+        <text class="dg-tb" x="252" y="44" text-anchor="end">86</text><text class="dg-tb" x="252" y="220" text-anchor="end">85</text>
+        <text class="dg-tb" x="388" y="44">30</text><text class="dg-tb" x="388" y="220">87</text>
+        <text class="dg-ts" x="40" y="18">+12 V commande</text><text class="dg-ts" x="139" y="52" text-anchor="middle">interrupteur</text>
+        <text class="dg-ts" x="376" y="12">+12 V via fusible</text><text class="dg-ts" x="540" y="80" text-anchor="middle">consommateur</text>
+        <text class="dg-ts" x="300" y="130">bobine</text>
+      </svg>
+      <p class="viz-desc" data-desc></p>${note('Numérotation DIN des bornes ' + S('gen') + '. Petit courant de commande, gros courant de puissance.')}`;
+    },
+    init(el) {
+      const b = el.querySelector('[data-k="cmd"]'), d = el.querySelector('[data-desc]');
+      const set = (on) => {
+        el.classList.toggle('on', on); b.setAttribute('aria-pressed', on); b.textContent = on ? 'Relâcher la commande' : 'Actionner la commande';
+        d.textContent = on ? 'Un faible courant traverse la bobine (86 → 85) : l’électroaimant ferme le contact 30 → 87 et le consommateur reçoit son courant.' : 'Commande ouverte : la bobine n’est pas alimentée, le ressort garde le contact 30-87 ouvert.';
+      };
+      b.addEventListener('click', () => set(!el.classList.contains('on'))); set(false);
+    }
+  };
+
+  /* ---------------- 7. Lecteur de corrections de mélange ---------------- */
+  V.trims = {
+    title: 'Lecteur de corrections de mélange', lessons: ['live-data', 'reniflard'],
+    html() {
+      const id = 'vz' + (++uid);
+      const inp = (k, v) => `<input class="input tnum" type="number" inputmode="decimal" step="1" id="${id}-${k}" data-k="${k}" value="${v}" aria-label="${k}">`;
+      return head(this.title, '') +
+      `<p class="viz-desc" style="margin-top:0">Entre la somme court terme + long terme (en %) lue sur ton lecteur OBD, moteur chaud.</p>
+      <div class="vpresets"><button class="vbtn" type="button" data-p="0,0,2,1">Moteur sain</button><button class="vbtn" type="button" data-p="18,17,4,3">Prise d’air</button><button class="vbtn" type="button" data-p="14,15,13,14">Débitmètre</button><button class="vbtn" type="button" data-p="3,17,2,12">Un seul banc</button><button class="vbtn" type="button" data-p="-15,-14,-12,-13">Riche</button></div>
+      <div class="trim-grid"><span></span><b>Ralenti</b><b>2 500 tr/min</b><b>Banc 1</b>${inp('b1i', 18)}${inp('b1h', 4)}<b>Banc 2</b>${inp('b2i', 17)}${inp('b2h', 3)}</div>
+      <div class="trim-bars">${['b1i', 'b2i', 'b1h', 'b2h'].map((k) => `<div class="tb"><small>${{ b1i: 'B1 ralenti', b2i: 'B2 ralenti', b1h: 'B1 2 500', b2h: 'B2 2 500' }[k]}</small><div class="tbar"><i data-bar="${k}"></i></div><span class="mono tnum" data-val="${k}"></span></div>`).join('')}</div>
+      <div class="callout" data-verdict><span class="callout-label">Lecture</span><p data-vt></p><div class="links" data-vl></div></div>
+      ${note('Seuils de lecture : ±10 % sain, au-delà de ±20 % code probable ' + S('gen'))}`;
+    },
+    init(el) {
+      const inputs = {}; el.querySelectorAll('input[data-k]').forEach((i) => { inputs[i.dataset.k] = i; });
+      const L = (id, t) => `<a href="#l-${id}">${t}</a>`;
+      const upd = () => {
+        const v = {}; Object.keys(inputs).forEach((k) => { v[k] = parseFloat(inputs[k].value) || 0; });
+        Object.keys(v).forEach((k) => {
+          const b = el.querySelector(`[data-bar="${k}"]`), x = clamp(v[k], -25, 25);
+          b.style.transform = `translateX(${x >= 0 ? 0 : (x / 25) * 100}%) scaleX(${Math.abs(x) / 25})`;
+          b.className = Math.abs(v[k]) > 20 ? 'bad' : Math.abs(v[k]) > 10 ? 'warn' : 'good';
+          el.querySelector(`[data-val="${k}"]`).textContent = (v[k] > 0 ? '+' : '') + v[k] + ' %';
+        });
+        const lean = (x) => x > 10, rich = (x) => x < -10, all = [v.b1i, v.b2i, v.b1h, v.b2h];
+        let t, cls, links;
+        if (all.every((x) => Math.abs(x) <= 10)) { t = 'Mélange sain : les corrections restent dans la plage normale.'; cls = 'tip'; links = [L('live-data', 'Données en direct')]; }
+        else if (all.some(rich) && !all.some(lean)) { t = 'Mélange riche : le calculateur retire de l’essence. Débitmètre qui surestime, injecteur qui fuit, pression d’essence trop forte, filtre à air colmaté.'; cls = 'warn'; links = [L('admission', 'Débitmètre'), L('live-data', 'Données en direct')]; }
+        else if (Math.abs(v.b1i - v.b2i) > 8 || Math.abs(v.b1h - v.b2h) > 8) { const bad = (v.b1i + v.b1h) > (v.b2i + v.b2h) ? 1 : 2; t = 'Un seul banc s’écarte (banc ' + bad + ') : cherche une cause propre à ce banc, joint de collecteur, injecteur, fuite d’échappement avant la sonde.'; cls = 'warn'; links = [L('fumee', 'Test à la fumée'), L('gestion-me', 'Gestion moteur')]; }
+        else if (lean(v.b1i) && lean(v.b2i) && v.b1h < v.b1i - 5 && v.b2h < v.b2i - 5) { t = 'Pauvre au ralenti sur les deux bancs, plus normal en charge : prise d’air commune. Sur le M112 : durites de reniflard, soufflet d’admission, joints de collecteur, durite de servofrein.'; cls = 'danger'; links = [L('reniflard', 'Reniflard'), L('p-soufflet', 'Soufflet'), L('fumee', 'Test à la fumée')]; }
+        else if (all.every(lean)) { t = 'Pauvre partout, sur les deux bancs : débitmètre qui sous-estime l’air, ou pression d’essence insuffisante.'; cls = 'danger'; links = [L('admission', 'Débitmètre'), L('tests-meca', 'Pression d’essence')]; }
+        else { t = 'Corrections élevées mais sans schéma net : enregistre un trajet et compare les bancs.'; cls = 'warn'; links = [L('enregistrement', 'Données enregistrées')]; }
+        const box = el.querySelector('[data-verdict]'); box.className = 'callout ' + cls;
+        el.querySelector('[data-vt]').textContent = t; el.querySelector('[data-vl]').innerHTML = links.join('');
+      };
+      el.addEventListener('input', (e) => { if (e.target.dataset.k) upd(); });
+      el.querySelectorAll('[data-p]').forEach((b) => b.addEventListener('click', () => { const p = b.dataset.p.split(','); ['b1i', 'b2i', 'b1h', 'b2h'].forEach((k, i) => { inputs[k].value = p[i]; }); upd(); }));
+      upd();
+    }
+  };
+
+  /* ---------------- 8. Batterie et charge ---------------- */
+  V.batterie = {
+    title: 'Testeur de batterie', lessons: ['multimetre', 'charge'],
+    html() {
+      const id = 'vz' + (++uid);
+      const arc = (a0, a1, cls) => { const p = (a) => [150 + 110 * Math.cos(Math.PI - a * Math.PI), 150 - 110 * Math.sin(Math.PI - a * Math.PI)]; const [x0, y0] = p(a0), [x1, y1] = p(a1); return `<path class="${cls}" d="M${x0.toFixed(1)} ${y0.toFixed(1)} A110 110 0 0 1 ${x1.toFixed(1)} ${y1.toFixed(1)}" stroke-width="16" fill="none"/>`; };
+      return head(this.title, `<div class="seg" role="group" aria-label="Mesure"><button type="button" class="on" data-mode="rest" aria-pressed="true">Moteur arrêté</button><button type="button" data-mode="run" aria-pressed="false">Moteur tournant</button></div>`) +
+      `<div class="bat"><svg viewBox="0 0 300 175" role="img" aria-label="Jauge de tension">
+        <g data-zones="rest">${arc(0, 0.4, 'z-bad')}${arc(0.4, 0.6, 'z-warn')}${arc(0.6, 1, 'z-ok')}</g>
+        <g data-zones="run" style="display:none">${arc(0, 0.343, 'z-bad')}${arc(0.343, 0.514, 'z-warn')}${arc(0.514, 0.714, 'z-ok')}${arc(0.714, 0.8, 'z-warn')}${arc(0.8, 1, 'z-bad')}</g>
+        <line class="needle" x1="150" y1="150" x2="150" y2="54" stroke-width="4"/><circle class="dg-dot" cx="150" cy="150" r="8"/>
+        <text class="dg-ts" x="30" y="170" data-min>11,5 V</text><text class="dg-ts" x="270" y="170" text-anchor="end" data-max>13,0 V</text>
+      </svg>
+      <div class="stack" style="gap:8px"><div class="vrange"><label for="${id}-v">Tension mesurée</label><input type="range" id="${id}-v" min="11.5" max="13" step="0.05" value="12.45"><span class="mono tnum" data-v>12,45 V</span></div>
+      <div class="viz-read"><div class="read"><small data-l1>Charge estimée</small><b data-soc>—</b></div><div class="read"><small>Diagnostic</small><b data-state>—</b></div></div></div></div>
+      <p class="viz-desc" data-desc></p>${note('Valeurs de référence courantes pour une batterie plomb 12 V ' + S('gen') + '. Au repos = après plusieurs heures sans rouler.')}`;
+    },
+    init(el) {
+      const q = (s) => el.querySelector(s), r = el.querySelector('input[type="range"]'); let mode = 'rest';
+      const SOC = [[11.8, 0], [12.0, 25], [12.2, 50], [12.4, 75], [12.6, 100]];
+      const soc = (v) => { if (v <= 11.8) return 0; if (v >= 12.6) return 100; for (let i = 1; i < SOC.length; i++) if (v <= SOC[i][0]) { const [a, pa] = SOC[i - 1], [b, pb] = SOC[i]; return pa + ((v - a) / (b - a)) * (pb - pa); } return 100; };
+      const upd = () => {
+        const v = +r.value, lo = +r.min, hi = +r.max, f = (v - lo) / (hi - lo);
+        q('.needle').setAttribute('transform', `rotate(${(-90 + f * 180).toFixed(1)} 150 150)`);
+        q('[data-v]').textContent = v.toFixed(2).replace('.', ',') + ' V';
+        let st, cls, d;
+        if (mode === 'rest') {
+          const s = Math.round(soc(v)); q('[data-soc]').textContent = s + ' %';
+          if (v >= 12.6) { st = 'Chargée'; cls = 'good'; d = 'Batterie pleine. Si le démarrage reste paresseux, fais le test de chute de tension.'; }
+          else if (v >= 12.4) { st = 'Correcte'; cls = 'good'; d = 'Charge correcte : un trajet suffit à la compléter.'; }
+          else if (v >= 12.2) { st = 'À recharger'; cls = 'warn'; d = 'À moitié chargée : recharge au chargeur intelligent, puis cherche pourquoi (trajets courts, consommation parasite).'; }
+          else if (v >= 12.0) { st = 'Très déchargée'; cls = 'bad'; d = 'Très déchargée : charge lente, puis test de conductance. Une batterie souvent à ce niveau se dégrade.'; }
+          else { st = 'Profondément déchargée'; cls = 'bad'; d = 'Profondément déchargée : charge lente puis test. Elle peut être sulfatée et à remplacer.'; }
+        } else {
+          q('[data-soc]').textContent = v.toFixed(1).replace('.', ',') + ' V';
+          if (v < 13.2) { st = 'Ne charge pas'; cls = 'bad'; d = 'L’alternateur ne charge pas : courroie, fusible, régulateur, connexions. Fais un test de chute de tension sur le câble de charge.'; }
+          else if (v < 13.8) { st = 'Charge faible'; cls = 'warn'; d = 'Charge faible : refais la mesure à 2 000 tr/min avec phares et ventilation, contrôle les connexions et la masse.'; }
+          else if (v <= 14.5) { st = 'Charge normale'; cls = 'good'; d = 'Plage normale de charge d’une batterie au plomb.'; }
+          else if (v <= 14.8) { st = 'Limite haute'; cls = 'warn'; d = 'Tension en limite haute : surveille, surtout par temps chaud.'; }
+          else { st = 'Surcharge'; cls = 'bad'; d = 'Surcharge : régulateur défaillant. La batterie chauffe, perd son électrolyte et les calculateurs souffrent.'; }
+        }
+        q('[data-state]').textContent = st; q('[data-state]').className = cls; q('[data-desc]').textContent = d;
+      };
+      el.querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => {
+        mode = b.dataset.mode; el.querySelectorAll('[data-mode]').forEach((x) => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); });
+        el.querySelector('[data-zones="rest"]').style.display = mode === 'rest' ? '' : 'none'; el.querySelector('[data-zones="run"]').style.display = mode === 'run' ? '' : 'none';
+        if (mode === 'rest') { r.min = 11.5; r.max = 13; r.value = 12.45; q('[data-min]').textContent = '11,5 V'; q('[data-max]').textContent = '13,0 V'; q('[data-l1]').textContent = 'Charge estimée'; }
+        else { r.min = 12; r.max = 15.5; r.value = 14.1; q('[data-min]').textContent = '12,0 V'; q('[data-max]').textContent = '15,5 V'; q('[data-l1]').textContent = 'Tension de charge'; }
+        upd();
+      }));
+      r.addEventListener('input', upd); upd();
+    }
+  };
+
+  function mount(root) {
+    (root || document).querySelectorAll('[data-viz]:not([data-ready])').forEach((el) => {
+      const v = V[el.dataset.viz]; if (!v) return;
+      el.dataset.ready = '1'; el.classList.add('viz'); el.innerHTML = v.html();
+      try { v.init(el); } catch (e) { el.insertAdjacentHTML('beforeend', '<p class="viz-note">Animation indisponible sur ce navigateur.</p>'); }
+    });
+  }
+  return { mount, list: () => Object.keys(V).map((k) => ({ id: k, title: V[k].title, lessons: V[k].lessons })) };
+})();
+
+/* Mouvement et retours visuels de l'Académie W203. Code original, aucune dépendance. */
+window.Motion = (function () {
+  'use strict';
+  const RM = matchMedia('(prefers-reduced-motion: reduce)');
+  const reduced = () => RM.matches;
+  const EASE = 'cubic-bezier(.22,1,.36,1)';
+
+  /* Cascade d'apparition des cartes, à partir d'un état visible (jamais bloqué en transparent). */
+  function enter(view) {
+    if (reduced()) return;
+    view.querySelectorAll('.grid,.lesson-list,.levels,.answers,.causes,.route-track,.list-box').forEach((g) => {
+      [...g.children].slice(0, 16).forEach((c, i) => { c.style.setProperty('--i', i); c.classList.add('rise'); });
+    });
+  }
+  function ring(view) {
+    const fg = view.querySelector('.ring .fg'); if (!fg || reduced()) return;
+    const to = fg.getAttribute('stroke-dashoffset'), full = fg.getAttribute('stroke-dasharray');
+    fg.style.transition = 'none'; fg.setAttribute('stroke-dashoffset', full); fg.getBoundingClientRect();
+    fg.style.transition = 'stroke-dashoffset 1.1s ' + EASE; requestAnimationFrame(() => fg.setAttribute('stroke-dashoffset', to));
+  }
+  function pop(el) { if (!el || reduced() || !el.animate) return; el.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.035)' }, { transform: 'scale(1)' }], { duration: 320, easing: EASE }); }
+  function shake(el) { if (!el || reduced() || !el.animate) return; el.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-7px)' }, { transform: 'translateX(6px)' }, { transform: 'translateX(-4px)' }, { transform: 'translateX(0)' }], { duration: 360, easing: 'ease-out' }); }
+  function stepIn(el, dir) { if (!el || reduced() || !el.animate) return; el.animate([{ opacity: 0.4, transform: `translateX(${dir === 'back' ? -26 : 26}px)` }, { opacity: 1, transform: 'none' }], { duration: 380, easing: EASE }); }
+
+  /* « +20 XP » qui file vers le compteur d'XP. */
+  function xp(from, n) {
+    const pill = document.getElementById('xp-pill'); if (!pill || !n) return;
+    if (reduced() || !from || !pill.animate) { pill.classList.add('bump'); setTimeout(() => pill.classList.remove('bump'), 500); return; }
+    const a = from.getBoundingClientRect(), b = pill.getBoundingClientRect();
+    const s = document.createElement('span'); s.className = 'xp-float'; s.textContent = '+' + n + ' XP'; document.body.appendChild(s);
+    const x0 = a.left + a.width / 2, y0 = a.top + a.height / 2, x1 = b.left + b.width / 2, y1 = b.top + b.height / 2;
+    s.animate([
+      { transform: `translate(${x0}px,${y0}px) translate(-50%,-50%) scale(.6)`, opacity: 0 },
+      { transform: `translate(${x0}px,${y0 - 34}px) translate(-50%,-50%) scale(1.1)`, opacity: 1, offset: 0.3 },
+      { transform: `translate(${x1}px,${y1}px) translate(-50%,-50%) scale(.5)`, opacity: 0.2 }
+    ], { duration: 1000, easing: EASE }).onfinish = () => { s.remove(); pill.classList.add('bump'); setTimeout(() => pill.classList.remove('bump'), 500); };
+  }
+
+  /* Confettis légers pour un module terminé ou un nouveau rang. */
+  function confetti() {
+    if (reduced()) return;
+    const c = document.createElement('canvas'); c.className = 'confetti'; c.setAttribute('aria-hidden', 'true');
+    const dpr = Math.min(2, devicePixelRatio || 1); c.width = innerWidth * dpr; c.height = innerHeight * dpr; document.body.appendChild(c);
+    const g = c.getContext('2d'); g.scale(dpr, dpr);
+    const css = getComputedStyle(document.documentElement);
+    const cols = ['--accent', '--green', '--amber', '--red'].map((v) => css.getPropertyValue(v).trim() || '#1C5797');
+    const P = Array.from({ length: 90 }, () => ({ x: innerWidth / 2 + (Math.random() - 0.5) * 120, y: innerHeight * 0.35, vx: (Math.random() - 0.5) * 9, vy: -4 - Math.random() * 8, r: 3 + Math.random() * 4, a: Math.random() * 6, va: (Math.random() - 0.5) * 0.4, c: cols[(Math.random() * cols.length) | 0] }));
+    const t0 = performance.now();
+    const tick = (now) => {
+      const t = (now - t0) / 1000; g.clearRect(0, 0, innerWidth, innerHeight);
+      P.forEach((p) => { p.vy += 0.28; p.vx *= 0.99; p.x += p.vx; p.y += p.vy; p.a += p.va; g.save(); g.globalAlpha = Math.max(0, 1 - t / 1.6); g.translate(p.x, p.y); g.rotate(p.a); g.fillStyle = p.c; g.fillRect(-p.r, -p.r / 2, p.r * 2, p.r); g.restore(); });
+      if (t < 1.6) requestAnimationFrame(tick); else c.remove();
+    };
+    requestAnimationFrame(tick);
+  }
+
+  /* Sommaire de leçon : puces vers chaque section. */
+  function toc(view) {
+    const prose = view.querySelector('.lesson .prose'); if (!prose) return;
+    const hs = [...prose.querySelectorAll(':scope > h2')]; if (hs.length < 3) return;
+    hs.forEach((h, i) => { h.id = 'sec-' + (i + 1); });
+    const nav = document.createElement('nav'); nav.className = 'toc'; nav.setAttribute('aria-label', 'Dans cette leçon');
+    nav.innerHTML = '<span class="eyebrow">Dans cette leçon</span>' + hs.map((h, i) => `<button type="button" data-sec="${i + 1}">${h.textContent}</button>`).join('');
+    prose.parentNode.insertBefore(nav, prose);
+    nav.addEventListener('click', (e) => { const b = e.target.closest('[data-sec]'); if (!b) return; const h = document.getElementById('sec-' + b.dataset.sec); if (h) h.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'start' }); });
+  }
+
+  /* Barre de lecture et en-tête qui s'efface en descendant (téléphone). */
+  let lastY = 0, ticking = false;
+  function onScroll() {
+    if (ticking) return; ticking = true;
+    requestAnimationFrame(() => {
+      ticking = false;
+      const y = scrollY, h = document.documentElement.scrollHeight - innerHeight;
+      const bar = document.getElementById('readbar'); if (bar) bar.style.setProperty('--p', h > 0 ? Math.min(1, y / h) : 0);
+      const hdr = document.querySelector('.topbar');
+      if (hdr && innerWidth < 1000 && !document.querySelector('.search-panel:not([hidden])')) hdr.classList.toggle('is-hidden', y > lastY + 4 && y > 140); else if (hdr) hdr.classList.remove('is-hidden');
+      if (y < lastY - 4 && hdr) hdr.classList.remove('is-hidden');
+      lastY = y;
+    });
+  }
+  addEventListener('scroll', onScroll, { passive: true });
+  addEventListener('resize', onScroll, { passive: true });
+
+  return { enter, ring, pop, shake, stepIn, xp, confetti, toc, onScroll, reduced };
+})();
+
 (function () {
 'use strict';
 const W = window.W203, R = W.ref;
@@ -3327,7 +4080,7 @@ const TOTAL_Q = LESSONS.reduce((n, l) => n + (l.quiz ? l.quiz.length : 0), 0);
 /* ---------- État (navigateur) ---------- */
 const KEY = 'academie-w203-v1';
 function fresh() {
-  return { done: {}, quiz: {}, car: Object.assign({}, W.garage.car), dossiers: W.garage.dossiers.map((d) => Object.assign({}, d)), log: W.garage.log.map((x) => Object.assign({}, x)), plan: {}, tools: {}, last: '', deleted: {}, resetAt: 0, updated: 0, owner: '', dirty: false };
+  return { done: {}, quiz: {}, car: Object.assign({}, W.garage.car), dossiers: W.garage.dossiers.map((d) => Object.assign({}, d)), log: W.garage.log.map((x) => Object.assign({}, x)), plan: {}, tools: {}, cards: {}, last: '', deleted: {}, resetAt: 0, updated: 0, owner: '', dirty: false };
 }
 let S = fresh();
 try { const raw = localStorage.getItem(KEY); if (raw) S = Object.assign(fresh(), JSON.parse(raw)); } catch (e) { /* stockage indisponible */ }
@@ -3367,7 +4120,7 @@ function mergeRemote(R) {
     plan[k] = { km: String(Math.max(+a.km || 0, +b.km || 0) || ''), date: [a.date || '', b.date || ''].sort().pop() };
   });
   S.plan = plan;
-  if (remoteNewer) { S.car = Object.assign({}, S.car, R.car); S.tools = Object.assign({}, R.tools); }
+  if (remoteNewer) { S.car = Object.assign({}, S.car, R.car); S.tools = Object.assign({}, R.tools); S.cards = Object.assign({}, R.cards); }
   S.deleted = del; S.resetAt = Math.max(rL, rR); S.updated = Math.max(lU, rU);
   return JSON.stringify(stripLocal(S)) !== before;
 }
@@ -3478,7 +4231,9 @@ const P = {
   drop: '<path d="M12 3c3 4.5 6 7.6 6 11a6 6 0 0 1-12 0c0-3.4 3-6.5 6-11z"/>',
   shuffle: '<path d="M4 7h3c5 0 5 10 10 10h3"/><path d="M4 17h3c2 0 3-1.5 4-3.5M13.5 9.5c1-1.5 2-2.5 3.5-2.5h3"/><path d="M18 4l3 3-3 3M18 14l3 3-3 3"/>',
   close: '<path d="M6 6l12 12M18 6L6 18"/>',
-  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>'
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>',
+  play: '<circle cx="12" cy="12" r="9"/><path d="M10 8.5l5 3.5-5 3.5z"/>',
+  cards: '<rect x="3" y="7" width="13" height="14" rx="2"/><path d="M8 3h11a2 2 0 0 1 2 2v12"/>'
 };
 const ic = (n) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n]}</svg>`;
 const srcBadge = (k) => W.h.s(k);
@@ -3497,11 +4252,6 @@ function vHome() {
   const resume = (S.last && LMAP[S.last] && !S.done[S.last]) ? LMAP[S.last] : nextLesson();
   const open = S.dossiers.filter((d) => d.status !== 'fait');
   const car = S.car;
-  const lvRows = [0, 1, 2, 3, 4].map((lv) => {
-    const mods = W.modules.filter((m) => m.level === lv);
-    const ls = mods.flatMap((m) => m.lessons); const d = ls.filter((l) => S.done[l.id]).length;
-    return `<a class="level-row" href="#cursus"><span class="n">${lv}</span><span><b>${LEVELS[lv].split(' · ')[1]}</b><small>${mods.map((m) => esc(m.title)).join(' · ')}</small></span><span class="mono muted tnum">${d}/${ls.length}</span></a>`;
-  }).join('');
   return `
 <section class="hero">
   <p class="eyebrow">Académie · Mercedes-Benz C 240 · W203</p>
@@ -3537,29 +4287,35 @@ function vHome() {
     </div>
   </div>
 </section>
+<section class="section"><div class="section-head"><h2>Ta route</h2><a href="#cursus">Voir le cursus</a></div>${routeMap()}<p class="muted" style="margin:0;font-size:.86rem">Chaque pastille est un module : l’anneau se remplit à mesure que tu termines ses leçons. La pastille qui pulse est ta prochaine étape.</p></section>
 ${open.length ? `<section class="section"><div class="section-head"><h2>Tes dossiers en cours</h2><a href="#garage">Mon garage</a></div><div class="grid g3">${open.map((d) => `<a class="card dossier" style="text-decoration:none;color:var(--ink)" href="${LMAP[d.lesson] ? '#l-' + d.lesson : '#garage'}"><div class="row"><b>${esc(d.title)}</b><span class="status ${d.status}">${statusLabel(d.status)}</span></div><span class="muted" style="font-size:.88rem;line-height:1.45">${esc(d.notes).slice(0, 140)}${d.notes && d.notes.length > 140 ? '…' : ''}</span>${LMAP[d.lesson] ? `<span style="color:var(--accent);font-size:.88rem">Leçon : ${LMAP[d.lesson].title}</span>` : ''}</a>`).join('')}</div></section>` : ''}
 <section class="section">
   <h2>Outils d’atelier</h2>
-  <div class="grid g3">
+  <div class="grid tools">
     ${tile('#diag', 'pulse', 'Diagnostic guidé', 'Pars d’un symptôme, obtiens les causes classées et les tests à faire.')}
     ${tile('#codes', 'codes', 'Codes défaut', 'Les codes OBD utiles au M112, avec les causes typiques sur ta voiture.')}
     ${tile('#ref-couples', 'gauge', 'Couples de serrage', 'Valeurs sourcées, convertisseur et calcul avec rallonge.')}
     ${tile('#ref-fluides', 'drop', 'Fluides & capacités', 'Normes Mercedes et quantités pour chaque circuit.')}
     ${tile('#garage', 'car', 'Mon garage', 'Dossiers, carnet d’entretien et échéances calculées.')}
     ${tile('#revision', 'shuffle', 'Révision', 'Dix questions tirées au hasard dans tes leçons.')}
+    ${tile('#ref-schemas', 'play', 'Schémas animés', 'Moteur, refroidissement, direction, admission : voir le fonctionnement.')}
+    ${tile('#cartes', 'cards', 'Cartes mémoire', 'Le vocabulaire Mercedes et mécanique en cartes à retourner.')}
   </div>
-</section>
-<section class="section"><h2>Le parcours</h2><div class="levels">${lvRows}</div></section>`;
+</section>`;
 }
 function tile(href, icon, t, d) { return `<a class="tool-tile" href="${href}">${ic(icon)}<b>${t}</b><span>${d}</span></a>`; }
 function statusLabel(s) { return { afaire: 'À faire', encours: 'En cours', fait: 'Fait' }[s] || s; }
 
+function routeMap() {
+  const cur = (nextLesson() || {}).mod;
+  return `<div class="route" id="route"><div class="route-track">${W.modules.map((m) => { const [d, n] = modProg(m); const st = d === n ? 'done' : (cur && cur.id === m.id ? 'cur' : (d ? 'part' : '')); return `<a class="node ${st}" href="#m-${m.id}" style="--p:${Math.round((d / n) * 100)}" aria-label="${esc(m.code + ' ' + m.title + ', ' + d + ' sur ' + n + ' leçons')}"><span class="dot"><b>${m.num}</b></span><small>${m.title}</small></a>`; }).join('')}</div></div>`;
+}
 function vCursus() {
   const groups = [0, 1, 2, 3, 4].map((lv) => {
     const mods = W.modules.filter((m) => m.level === lv);
     return `<div class="section"><h2>${LEVELS[lv]}</h2><div class="grid g2">${mods.map(modCard).join('')}</div></div>`;
   }).join('');
-  return `<div class="section-head"><div class="stack" style="gap:6px"><p class="eyebrow">${LESSONS.length} leçons · ${TOTAL_Q} questions</p><h1>Cursus</h1></div><a class="btn quiet" href="#revision">${ic('shuffle').replace('<svg', '<svg width="18" height="18"')}Révision aléatoire</a></div>${groups}`;
+  return `<div class="section-head"><div class="stack" style="gap:6px"><p class="eyebrow">${LESSONS.length} leçons · ${TOTAL_Q} questions</p><h1>Cursus</h1></div><a class="btn quiet" href="#revision">${ic('shuffle').replace('<svg', '<svg width="18" height="18"')}Révision aléatoire</a></div>${routeMap()}<div class="row" style="margin-top:10px"><a class="btn quiet small" href="#cartes">Cartes mémoire</a><a class="btn quiet small" href="#ref-schemas">Schémas animés</a></div>${groups}`;
 }
 function modCard(m) {
   const [d, n] = modProg(m);
@@ -3581,7 +4337,7 @@ function quizHTML(key, items, title) {
     return `<div class="q" id="q-${key}-${k}"><p class="q-text">${k + 1}. ${q.q}</p><div class="opts">${q.o.map((o, j) => {
       let cls = 'opt';
       if (a != null) { if (j === q.a) cls += ' right'; else if (j === a) cls += ' wrong'; }
-      return `<button class="${cls}" data-act="ans" data-k="${key}" data-q="${k}" data-o="${j}"${a != null ? ' disabled' : ''}>${o}</button>`;
+      return `<button class="${cls}" data-act="ans" data-k="${key}" data-q="${k}" data-o="${j}"${a != null ? ' disabled' : ''}><span class="opt-k" aria-hidden="true">${'ABCDE'[j]}</span><span>${o}</span></button>`;
     }).join('')}</div><p class="q-x"${a != null ? '' : ' hidden'}>${a === q.a ? 'Exact. ' : 'Pas tout à fait. '}${q.x}</p></div>`;
   }).join('');
   const nAns = Object.keys(st.ans).length;
@@ -3605,11 +4361,50 @@ function vLesson(l) {
 </article>`;
 }
 
+let CARD = null;
+function cardDeck() {
+  const box = (k) => S.cards[k] || 0;
+  const keys = R.gloss.map((g) => g[0]).sort(() => Math.random() - 0.5).sort((a, b) => box(a) - box(b));
+  CARD = { queue: keys, i: 0, flipped: false, fresh: true };
+}
+function vCartes() {
+  if (!CARD) cardDeck();
+  const k = CARD.queue[CARD.i], g = R.gloss.find((x) => x[0] === k) || R.gloss[0], bx = S.cards[k] || 0;
+  const known = R.gloss.filter((x) => (S.cards[x[0]] || 0) >= 2).length;
+  return `<nav class="crumbs"><a href="#cursus">Cursus</a><span>›</span><span>Cartes mémoire</span></nav>
+  <div class="section-head"><div class="stack" style="gap:6px"><p class="eyebrow">${R.gloss.length} termes · ${known} maîtrisés</p><h1>Cartes mémoire</h1></div><a class="btn quiet small" href="#revision">Quiz de révision</a></div>
+  <div class="fc-wrap"><div class="fc-meta"><span class="mono tnum">Carte ${CARD.i + 1}/${CARD.queue.length}</span><span class="fc-box" aria-label="Niveau de maîtrise ${bx} sur 3">${'<i class="on"></i>'.repeat(bx)}${'<i></i>'.repeat(3 - bx)}</span></div>
+  <div class="bar"><i style="width:${(known / R.gloss.length) * 100}%"></i></div>
+  <div class="fc-stage"><div class="fc${CARD.flipped ? ' flip' : ''}${CARD.fresh ? ' fc-in' : ''}" id="fc" tabindex="0" role="button" aria-label="Retourner la carte ${esc(g[0])}">
+    <div class="fc-face fc-front"><small class="eyebrow">Terme</small><b>${g[0]}</b><i>${g[1]}</i><span class="fc-hint">Touche la carte pour voir la définition</span></div>
+    <div class="fc-face fc-back"><small class="eyebrow">${g[0]}</small><p>${g[2]}</p></div>
+  </div></div>
+  <div class="fc-actions"><button class="btn quiet" data-act="fc-no">À revoir</button><button class="btn ghost" data-act="fc-flip">Retourner</button><button class="btn" data-act="fc-yes">Je sais</button></div>
+  <p class="muted fc-help">Glisse la carte vers la droite si tu sais, vers la gauche pour la revoir. Au clavier : espace pour retourner, flèches pour répondre.</p></div>`;
+}
+function cardAnswer(yes) {
+  const k = CARD.queue[CARD.i]; S.cards[k] = yes ? Math.min(3, (S.cards[k] || 0) + 1) : 0; save();
+  const next = () => { CARD.i++; CARD.flipped = false; CARD.fresh = true; if (CARD.i >= CARD.queue.length) { cardDeck(); toast('Paquet terminé : on recommence par les cartes à revoir'); } rerender(true); };
+  const fc = $('#fc');
+  if (fc && fc.animate && !Motion.reduced()) fc.animate([{ transform: fc.style.transform || 'none', opacity: 1 }, { transform: `translateX(${yes ? 130 : -130}%) rotate(${yes ? 14 : -14}deg)`, opacity: 0 }], { duration: 280, easing: 'ease-in' }).onfinish = next;
+  else next();
+}
+function bindCard() {
+  const fc = $('#fc'); if (!fc) return;
+  CARD.fresh = false;
+  let x0 = null, dx = 0, moved = false;
+  fc.addEventListener('pointerdown', (e) => { x0 = e.clientX; dx = 0; moved = false; fc.setPointerCapture(e.pointerId); fc.classList.add('drag'); });
+  fc.addEventListener('pointermove', (e) => { if (x0 == null) return; dx = e.clientX - x0; if (Math.abs(dx) > 6) moved = true; if (moved) fc.style.transform = `translateX(${dx}px) rotate(${dx / 18}deg)`; fc.dataset.swipe = dx > 40 ? 'yes' : dx < -40 ? 'no' : ''; });
+  const end = () => { if (x0 == null) return; x0 = null; fc.classList.remove('drag'); fc.dataset.swipe = ''; if (Math.abs(dx) > 90) cardAnswer(dx > 0); else fc.style.transform = ''; };
+  fc.addEventListener('pointerup', end); fc.addEventListener('pointercancel', end);
+  fc.addEventListener('click', () => { if (moved) return; CARD.flipped = !CARD.flipped; fc.classList.toggle('flip', CARD.flipped); });
+  fc.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); fc.click(); } else if (e.key === 'ArrowRight') cardAnswer(true); else if (e.key === 'ArrowLeft') cardAnswer(false); });
+}
 function vRevision() {
   if (!REV) newRevision();
   const items = REV.map((r) => r.q);
   return `<nav class="crumbs"><a href="#cursus">Cursus</a><span>›</span><span>Révision</span></nav>
-  <div class="section-head"><div class="stack" style="gap:6px"><p class="eyebrow">${REV.src}</p><h1>Révision</h1></div><button class="btn quiet" data-act="rev-new">Nouveau tirage</button></div>
+  <div class="section-head"><div class="stack" style="gap:6px"><p class="eyebrow">${REV.src}</p><h1>Révision</h1></div><div class="row"><a class="btn quiet" href="#cartes">Cartes mémoire</a><button class="btn quiet" data-act="rev-new">Nouveau tirage</button></div></div>
   <div class="lesson" style="margin:0;max-width:760px">${quizHTML('rev', items, 'Dix questions')}<p class="muted" style="font-size:.86rem;margin-top:12px">${REV.map((r, k) => `${k + 1}. <a href="#l-${r.lid}">${LMAP[r.lid].title}</a>`).join(' · ')}</p></div>`;
 }
 function newRevision() {
@@ -3649,9 +4444,9 @@ function vTree(t) {
     ${node.links && node.links.length ? `<div><p class="eyebrow" style="margin-bottom:8px">À lire</p><div class="links">${node.links.map(linkFor).join('')}</div></div>` : ''}</div>`;
   }
   return `<nav class="crumbs"><a href="#diag">Diagnostic</a><span>›</span><span>${t.title}</span></nav>
-  <div class="lesson" style="margin:0;max-width:760px"><header class="lesson-head"><p class="eyebrow">Diagnostic guidé</p><h1>${t.title}</h1></header>
+  <div class="lesson" style="margin:0;max-width:760px"><header class="lesson-head"><p class="eyebrow">Diagnostic guidé · ${node.q ? 'question ' + TREE.path.length : 'résultat'}</p><h1>${t.title}</h1></header>
   ${trail ? `<div class="trail">${trail}</div>` : ''}
-  <div class="card stack" style="gap:14px">${body}</div>
+  <div class="card stack" id="tree-card" style="gap:14px">${body}</div>
   <div class="row" style="margin-top:14px">${TREE.path.length > 1 ? '<button class="btn quiet small" data-act="tback">Étape précédente</button>' : ''}<button class="btn quiet small" data-act="treset">Recommencer</button><a class="btn ghost small" href="#diag">Autre symptôme</a></div></div>`;
 }
 
@@ -3670,11 +4465,11 @@ function codeRows(q) {
 }
 
 /* ---------- Références ---------- */
-const TABS = [['couples', 'Couples'], ['fluides', 'Fluides'], ['fiche', 'Fiche technique'], ['outils', 'Outillage'], ['plan', 'Plan d’entretien'], ['fuites', 'Fuites'], ['glossaire', 'Glossaire'], ['ressources', 'Ressources']];
+const TABS = [['couples', 'Couples'], ['fluides', 'Fluides'], ['fiche', 'Fiche technique'], ['schemas', 'Schémas animés'], ['outils', 'Outillage'], ['plan', 'Plan d’entretien'], ['fuites', 'Fuites'], ['glossaire', 'Glossaire'], ['ressources', 'Ressources']];
 function vRef(tab) {
   if (!TABS.some((t) => t[0] === tab)) tab = 'couples';
   const tabs = `<nav class="tabs" aria-label="Rubriques">${TABS.map((t) => `<a href="#ref-${t[0]}" class="${t[0] === tab ? 'on' : ''}">${t[1]}</a>`).join('')}</nav>`;
-  const body = { couples: refCouples, fluides: refFluides, fiche: () => `<div class="prose" style="max-width:none">${LMAP['fiche-c240'].body}</div>`, outils: refOutils, plan: refPlan, fuites: refFuites, glossaire: refGloss, ressources: refLinks }[tab]();
+  const body = { couples: refCouples, fluides: refFluides, fiche: () => `<div class="prose" style="max-width:none">${LMAP['fiche-c240'].body}</div>`, schemas: refSchemas, outils: refOutils, plan: refPlan, fuites: refFuites, glossaire: refGloss, ressources: refLinks }[tab]();
   return `<div class="stack" style="gap:6px;margin-bottom:14px"><p class="eyebrow">Références</p><h1>${TABS.find((t) => t[0] === tab)[1]}</h1></div>${tabs}<div class="stack" style="gap:18px;margin-top:12px">${body}</div>`;
 }
 function torqueRows(sys, q) {
@@ -3733,6 +4528,10 @@ function glossRows(q) {
 function refGloss() {
   return `<div class="filters"><input class="input" id="gl-q" type="search" placeholder="Chercher un terme…" autocomplete="off"></div><div class="list-box" id="gl-list">${glossRows('')}</div>`;
 }
+function refSchemas() {
+  return `<p class="muted" style="margin:0;max-width:66ch">Des schémas de principe à manipuler : lance, mets en pause, active une panne et regarde ce qui change. Chacun renvoie aux leçons où il sert.</p>` +
+    Viz.list().map((v) => `<div class="stack" style="gap:6px"><div data-viz="${v.id}"></div><div class="links">${v.lessons.map(linkFor).join('')}</div></div>`).join('');
+}
 function refLinks() {
   return `<div class="list-box">${R.links.map((l) => `<div class="gl-item"><b><a href="${l[1]}" target="_blank" rel="noopener">${l[0]}</a></b><p class="muted">${l[2]}</p></div>`).join('')}</div>
   <div class="card stack" style="gap:8px"><h3>Les badges de source</h3>${Object.keys(W.SRC).map((k) => `<p style="margin:0">${srcBadge(k)} ${W.SRC[k][1]}</p>`).join('')}</div>`;
@@ -3757,13 +4556,17 @@ function due(p) {
       if (days <= 0) { cls = 'late'; parts.push('en retard de ' + fmt(-days) + ' j'); } else { parts.push('dans ' + fmt(days) + ' j'); if (days < 45 && cls !== 'late') cls = 'soon'; }
     }
   }
-  return any ? { cls, txt: parts.join(' · ') } : { cls: '', txt: 'Renseigne la dernière fois' };
+  let frac = 0;
+  if (p.km && st.km) frac = Math.max(frac, (cur - +st.km) / p.km);
+  if (p.mo && st.date) { const d0 = new Date(st.date.length === 7 ? st.date + '-01' : st.date); if (!isNaN(d0)) frac = Math.max(frac, (Date.now() - d0) / (p.mo * 30.44 * 864e5)); }
+  return any ? { cls, txt: parts.join(' · '), frac: Math.max(0, Math.min(1, frac)) } : { cls: '', txt: 'Renseigne la dernière fois', frac: 0 };
 }
+function paintDue(p) { const d = due(p), out = $('#due-' + p.id), m = $('#dm-' + p.id); if (out) { out.className = 'due ' + d.cls; out.textContent = d.txt; } if (m) { m.style.transform = 'scaleX(' + d.frac.toFixed(3) + ')'; m.parentNode.className = 'pmeter ' + d.cls; } }
 function planRows() {
   return R.plan.map((p) => { const st = S.plan[p.id] || {}; const d = due(p); return `<div class="plan-row"><div><b>${p.item}</b><small>Tous les ${intervalText(p)}</small></div>
     ${p.km ? `<label class="lbl">Fait à (km)<input class="input tnum" type="number" inputmode="numeric" id="pk-${p.id}" data-plan-km="${p.id}" value="${esc(st.km || '')}"></label>` : '<span></span>'}
     <label class="lbl">Fait le<input class="input" type="date" id="pd-${p.id}" data-plan-date="${p.id}" value="${esc(st.date && st.date.length === 10 ? st.date : '')}"></label>
-    <span class="due ${d.cls}" id="due-${p.id}">${d.txt}</span></div>`; }).join('');
+    <div class="due-wrap"><span class="due ${d.cls}" id="due-${p.id}">${d.txt}</span><div class="pmeter ${d.cls}"><i id="dm-${p.id}" style="transform:scaleX(${d.frac.toFixed(3)})"></i></div></div></div>`; }).join('');
 }
 function logRows() {
   if (!S.log.length) return '<div class="empty">Aucune entrée. Ajoute ta première intervention ci-dessus.</div>';
@@ -3842,11 +4645,11 @@ function renderRail(h) {
   const curMod = h.indexOf('m-') === 0 ? h.slice(2) : (h.indexOf('l-') === 0 && LMAP[h.slice(2)] ? LMAP[h.slice(2)].mod.id : '');
   const nav = [['accueil', 'home', 'Accueil'], ['cursus', 'book', 'Cursus'], ['diag', 'pulse', 'Diagnostic'], ['ref', 'wrench', 'Références'], ['garage', 'car', 'Mon garage'], ['revision', 'shuffle', 'Révision']].concat(Cloud.available() ? [['compte', 'user', 'Compte']] : []);
   const on = navKey(h);
-  rail.innerHTML = `<nav class="rail-nav">${nav.map((n) => `<a href="#${n[0]}" class="${on === n[0] || (n[0] === 'revision' && h === 'revision') ? 'on' : ''}">${ic(n[1])}${n[2]}</a>`).join('')}</nav>
+  rail.innerHTML = `<nav class="rail-nav">${nav.map((n) => `<a href="#${n[0]}" class="${on === n[0] ? 'on' : ''}">${ic(n[1])}${n[2]}</a>`).join('')}</nav>
   <h4>Modules</h4><div class="rail-mods">${W.modules.map((m) => { const [d, n] = modProg(m); return `<a href="#m-${m.id}" class="${curMod === m.id ? 'on' : ''}"><span class="c">${m.code}</span><span>${m.title}</span><span class="p tnum">${d}/${n}</span></a>`; }).join('')}</div>`;
 }
 function navKey(h) {
-  if (h === 'revision') return 'revision';
+  if (h === 'revision' || h === 'cartes') return 'revision';
   if (h === 'cursus' || h.indexOf('m-') === 0 || h.indexOf('l-') === 0) return 'cursus';
   if (h === 'diag' || h === 'codes' || h.indexOf('t-') === 0) return 'diag';
   if (h === 'ref' || h.indexOf('ref-') === 0) return 'ref';
@@ -3860,8 +4663,10 @@ function setTabbar(h) {
 }
 function updateXp() { const x = xp(); const pill = $('#xp-pill'); if (pill) { pill.innerHTML = '<span class="tnum">' + x + ' XP</span><span class="xp-r"> · ' + rank(x).name + '</span>'; pill.title = rank(x).name; } }
 
-function route() {
+let booted = false;
+function route(quiet) {
   const h = decodeURIComponent((location.hash || '').slice(1)) || 'accueil';
+  const paint = () => {
   let html;
   if (h === 'cursus') html = vCursus();
   else if (h.indexOf('m-') === 0 && MMAP[h.slice(2)]) html = vModule(MMAP[h.slice(2)]);
@@ -3873,13 +4678,33 @@ function route() {
   else if (h === 'garage') html = vGarage();
   else if (h === 'revision') html = vRevision();
   else if (h === 'compte') html = vCompte();
+  else if (h === 'cartes') html = vCartes();
   else html = vHome();
   view.innerHTML = html;
-  renderRail(h); setTabbar(h); updateXp(); afterRender();
-  window.scrollTo(0, 0);
+  renderRail(h); setTabbar(h); updateXp(); afterRender(h, quiet);
+  if (!quiet) window.scrollTo(0, 0);
+  };
+  if (!quiet && booted && document.startViewTransition && !Motion.reduced()) { try { document.startViewTransition(paint); } catch (e) { paint(); } } else paint();
+  booted = true;
 }
-function rerender() { const y = window.scrollY; const h = decodeURIComponent((location.hash || '').slice(1)) || 'accueil'; route(); window.scrollTo(0, y); return h; }
-function afterRender() { calcCrowfoot(); }
+function rerender() { const y = window.scrollY; const h = decodeURIComponent((location.hash || '').slice(1)) || 'accueil'; route(true); window.scrollTo(0, y); return h; }
+function afterRender(h, quiet) {
+  calcCrowfoot();
+  if (window.Viz) Viz.mount(view);
+  document.body.classList.toggle('reading', !!h && h.indexOf('l-') === 0);
+  Motion.toc(view);
+  if (!quiet) { Motion.enter(view); Motion.ring(view); }
+  const rt = $('#route'), cn = rt && rt.querySelector('.node.cur'); if (cn) rt.scrollLeft = Math.max(0, cn.getBoundingClientRect().left - rt.getBoundingClientRect().left + rt.scrollLeft - 32);
+  if (h === 'cartes') bindCard();
+  Motion.onScroll();
+}
+function celebrate(from, x0, r0, mod, was) {
+  const x1 = xp(); if (x1 > x0) Motion.xp(from, x1 - x0);
+  const r1 = rank(x1).name, now = mod && modProg(mod)[0] === mod.lessons.length;
+  if (x1 > x0 && r1 !== r0) { setTimeout(() => { Motion.confetti(); toast('Nouveau rang : ' + r1); }, 650); return true; }
+  if (now && !was) { setTimeout(() => { Motion.confetti(); toast('Module ' + mod.code + ' terminé'); }, 650); return true; }
+  return false;
+}
 
 /* ---------- Calculs ---------- */
 function calcCrowfoot() {
@@ -3920,28 +4745,41 @@ view.addEventListener('click', (e) => {
     const st = QS[key] || (QS[key] = { ans: {} }); if (st.ans[k] != null) return;
     st.ans[k] = o;
     const items = key === 'rev' ? REV.map((r) => r.q) : LMAP[key].quiz;
-    if (Object.keys(st.ans).length === items.length && key !== 'rev') {
-      const good = items.filter((q, i) => st.ans[i] === q.a).length;
-      S.quiz[key] = Math.max(S.quiz[key] || 0, good); S.done[key] = true; save();
-      const r0 = rank(xp() - 0); toast(good === items.length ? 'Sans faute · ' + r0.name : 'Quiz terminé : ' + good + '/' + items.length);
+    const x0 = xp(), r0 = rank(x0).name, mod = LMAP[key] ? LMAP[key].mod : null, was = mod ? modProg(mod)[0] === mod.lessons.length : false;
+    let finished = false, good = 0;
+    if (Object.keys(st.ans).length === items.length) {
+      finished = true; good = items.filter((q, i) => st.ans[i] === q.a).length;
+      if (key !== 'rev') { S.quiz[key] = Math.max(S.quiz[key] || 0, good); S.done[key] = true; save(); }
     }
     const sec = $('#quiz-' + key);
     if (sec) { sec.outerHTML = quizHTML(key, items, key === 'rev' ? 'Dix questions' : 'Quiz'); }
+    const qEl = $('#q-' + key + '-' + k); if (qEl) { if (items[k].a === o) Motion.pop(qEl); else Motion.shake(qEl); }
+    if (finished) {
+      const res = view.querySelector('#quiz-' + key + ' .quiz-result');
+      const big = key !== 'rev' && celebrate(res, x0, r0, mod, was);
+      if (!big) toast(good === items.length ? 'Sans faute !' : 'Score : ' + good + '/' + items.length);
+      if (key === 'rev' && good === items.length) Motion.confetti();
+    }
     const doneBtn = view.querySelector('[data-act="done"]');
     if (doneBtn && key !== 'rev' && S.done[key]) { doneBtn.classList.add('done'); doneBtn.textContent = 'Leçon terminée ✓'; }
     updateXp(); renderRail(decodeURIComponent((location.hash || '').slice(1)));
   } else if (act === 'done') {
-    const id = b.dataset.l; S.done[id] = !S.done[id]; save();
+    const id = b.dataset.l, x0 = xp(), r0 = rank(x0).name, mod = LMAP[id].mod, was = modProg(mod)[0] === mod.lessons.length;
+    S.done[id] = !S.done[id]; save();
     b.classList.toggle('done', !!S.done[id]); b.textContent = S.done[id] ? 'Leçon terminée ✓' : 'Marquer comme terminée';
-    if (S.done[id]) toast('+20 XP · ' + rank(xp()).name);
+    if (S.done[id]) { Motion.pop(b); celebrate(b, x0, r0, mod, was); }
     updateXp(); renderRail(decodeURIComponent((location.hash || '').slice(1)));
   } else if (act === 'tnext') {
     const t = TMAP[TREE.id], node = t.n[TREE.path[TREE.path.length - 1]], a = node.a[+b.dataset.i];
-    TREE.picks.push(a[0]); TREE.path.push(a[1]); view.innerHTML = vTree(t); window.scrollTo(0, 0);
+    TREE.picks.push(a[0]); TREE.path.push(a[1]); view.innerHTML = vTree(t); window.scrollTo(0, 0); Motion.stepIn($('#tree-card'), 'fwd');
   } else if (act === 'tback') {
-    TREE.path.pop(); TREE.picks.pop(); view.innerHTML = vTree(TMAP[TREE.id]);
+    TREE.path.pop(); TREE.picks.pop(); view.innerHTML = vTree(TMAP[TREE.id]); Motion.stepIn($('#tree-card'), 'back');
   } else if (act === 'treset') {
     const t = TMAP[TREE.id]; TREE = null; view.innerHTML = vTree(t); window.scrollTo(0, 0);
+  } else if (act === 'fc-flip') {
+    const fc = $('#fc'); if (fc) fc.click();
+  } else if (act === 'fc-yes' || act === 'fc-no') {
+    cardAnswer(act === 'fc-yes');
   } else if (act === 'rev-new') {
     newRevision(); rerender();
   } else if (act === 'log-add') {
@@ -3980,13 +4818,13 @@ view.addEventListener('input', (e) => {
   else if (el.id === 'tq-q') $('#tq-body').innerHTML = torqueRows($('#tq-sys').value, el.value);
   else if (el.id === 'cv-nm') convert('nm'); else if (el.id === 'cv-lbf') convert('lbf'); else if (el.id === 'cv-kgf') convert('kgf');
   else if (el.id === 'cf-t' || el.id === 'cf-l' || el.id === 'cf-e') calcCrowfoot();
-  else if (el.dataset.car) { S.car[el.dataset.car] = el.dataset.car === 'km' ? (el.value === '' ? '' : +el.value) : el.value; save(); if (el.dataset.car === 'km') R.plan.forEach((p) => { const d = due(p), out = $('#due-' + p.id); if (out) { out.className = 'due ' + d.cls; out.textContent = d.txt; } }); }
+  else if (el.dataset.car) { S.car[el.dataset.car] = el.dataset.car === 'km' ? (el.value === '' ? '' : +el.value) : el.value; save(); if (el.dataset.car === 'km') R.plan.forEach(paintDue); }
   else if (el.dataset.dosTitle) { const d = S.dossiers.find((x) => x.id === el.dataset.dosTitle); if (d) { d.title = el.value; save(); } }
   else if (el.dataset.dosNotes) { const d = S.dossiers.find((x) => x.id === el.dataset.dosNotes); if (d) { d.notes = el.value; save(); } }
   else if (el.dataset.planKm || el.dataset.planDate) {
     const id = el.dataset.planKm || el.dataset.planDate; const st = S.plan[id] || (S.plan[id] = {});
     if (el.dataset.planKm) st.km = el.value; else st.date = el.value; save();
-    const p = R.plan.find((x) => x.id === id), d = due(p), out = $('#due-' + id); if (out) { out.className = 'due ' + d.cls; out.textContent = d.txt; }
+    paintDue(R.plan.find((x) => x.id === id));
   }
 });
 view.addEventListener('change', (e) => {
