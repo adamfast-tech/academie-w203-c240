@@ -13,7 +13,7 @@ Cursus complet pour entretenir, diagnostiquer et réparer soi-même une **Merced
 - Mon garage : dossiers en cours, carnet d'entretien, échéances calculées selon le kilométrage
 - Fonctionne hors ligne une fois ouvert
 
-La progression et le carnet sont enregistrés dans le navigateur de l'appareil.
+Sans compte, la progression et le carnet restent dans le navigateur de l'appareil. Avec un compte (le même que sur les autres académies : e-mail ou nom d'utilisateur + mot de passe), tout est synchronisé entre appareils via Supabase : leçons, quiz, voiture, dossiers, carnet, échéances et outillage. Chaque utilisateur ne peut lire et modifier que sa propre ligne (RLS). Schéma : `supabase/w203_progress.sql`.
 
 ## Installer sur iPhone ou iPad
 

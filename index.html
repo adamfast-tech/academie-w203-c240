@@ -353,6 +353,11 @@ table.spec td.v{font-family:var(--f-mono);white-space:nowrap;font-variant-numeri
 
 @media (max-width:560px){.brand span{display:none}.icon-btn .lbl{display:none}.icon-btn{padding:8px}}
 @media (max-width:400px){.xp-r{display:none}}
+.icon-btn{text-decoration:none;color:var(--ink);position:relative}
+.icon-btn .lbl{max-width:9em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acct-dot{width:8px;height:8px;border-radius:50%;display:inline-block;background:var(--muted)}
+.acct-dot.ok{background:var(--green)} .acct-dot.off{background:var(--amber)}
+@media (max-width:560px){.icon-btn .acct-dot{position:absolute;top:4px;right:4px}}
 
 </style>
 </head>
@@ -381,6 +386,8 @@ table.spec td.v{font-family:var(--f-mono);white-space:nowrap;font-variant-numeri
   </div>
   <div class="search-results"><div class="inner" id="sr"></div></div>
 </div>
+<script src="vendor/supabase-2.117.0.min.js"></script>
+<script>window.ACADEMIE_SUPABASE={"url": "https://cfcygkmrpxcjideljxxo.supabase.co", "key": "sb_publishable_i68zVFGjYsUyKef3b3p4Zw_x_COmUOS"};</script>
 <script>
 window.W203 = { modules: [], ref: {}, trees: [], garage: {} };
 (function () {
@@ -3320,11 +3327,126 @@ const TOTAL_Q = LESSONS.reduce((n, l) => n + (l.quiz ? l.quiz.length : 0), 0);
 /* ---------- État (navigateur) ---------- */
 const KEY = 'academie-w203-v1';
 function fresh() {
-  return { done: {}, quiz: {}, car: Object.assign({}, W.garage.car), dossiers: W.garage.dossiers.map((d) => Object.assign({}, d)), log: W.garage.log.map((x) => Object.assign({}, x)), plan: {}, tools: {}, last: '' };
+  return { done: {}, quiz: {}, car: Object.assign({}, W.garage.car), dossiers: W.garage.dossiers.map((d) => Object.assign({}, d)), log: W.garage.log.map((x) => Object.assign({}, x)), plan: {}, tools: {}, last: '', deleted: {}, resetAt: 0, updated: 0, owner: '', dirty: false };
 }
 let S = fresh();
 try { const raw = localStorage.getItem(KEY); if (raw) S = Object.assign(fresh(), JSON.parse(raw)); } catch (e) { /* stockage indisponible */ }
-function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* ignoré */ } }
+function store() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* ignoré */ } }
+function save() { S.updated = Date.now(); S.dirty = true; store(); if (typeof Cloud !== 'undefined') Cloud.push(); }
+
+/* ---------- Synchronisation en ligne (version web : Supabase) ---------- */
+const CFG = window.ACADEMIE_SUPABASE || null;
+const AUTH = { mode: 'login', msg: '', err: '', busy: false };
+function stripLocal(o) { const c = JSON.parse(JSON.stringify(o)); delete c.last; delete c.owner; delete c.dirty; c.v = 1; c.xp = xp(); return c; }
+function hasProgress() { return Object.keys(S.done).some((k) => S.done[k]) || Object.keys(S.plan).length > 0 || S.log.some((x) => !x.ex) || Object.keys(S.tools).some((k) => S.tools[k]); }
+function mergeRemote(R) {
+  if (!R || R.v !== 1) return false;
+  const before = JSON.stringify(stripLocal(S));
+  const rU = R.updated || 0, lU = S.updated || 0;
+  if (!S.dirty) {
+    if (rU >= lU) { const keep = { last: S.last, owner: S.owner }; S = Object.assign(fresh(), JSON.parse(JSON.stringify(R)), keep); delete S.v; delete S.xp; S.dirty = false; }
+    return JSON.stringify(stripLocal(S)) !== before;
+  }
+  const remoteNewer = rU > lU;
+  const del = Object.assign({}, R.deleted || {}, S.deleted || {});
+  const rR = R.resetAt || 0, rL = S.resetAt || 0;
+  if (rR > lU && rR > rL) { S.done = Object.assign({}, R.done); S.quiz = Object.assign({}, R.quiz); }
+  else if (!(rL > rU)) {
+    Object.keys(R.done || {}).forEach((k) => { if (R.done[k]) S.done[k] = true; });
+    Object.keys(R.quiz || {}).forEach((k) => { S.quiz[k] = Math.max(S.quiz[k] || 0, R.quiz[k] || 0); });
+  }
+  const list = (loc, rem) => {
+    const win = remoteNewer ? rem || [] : loc || [], lose = remoteNewer ? loc || [] : rem || [];
+    const ids = new Set(win.map((x) => x.id));
+    return win.concat(lose.filter((x) => !ids.has(x.id))).filter((x) => x && !del[x.id]);
+  };
+  S.log = list(S.log, R.log); S.dossiers = list(S.dossiers, R.dossiers);
+  const plan = Object.assign({}, S.plan);
+  Object.keys(R.plan || {}).forEach((k) => {
+    const a = plan[k] || {}, b = R.plan[k] || {};
+    plan[k] = { km: String(Math.max(+a.km || 0, +b.km || 0) || ''), date: [a.date || '', b.date || ''].sort().pop() };
+  });
+  S.plan = plan;
+  if (remoteNewer) { S.car = Object.assign({}, S.car, R.car); S.tools = Object.assign({}, R.tools); }
+  S.deleted = del; S.resetAt = Math.max(rL, rR); S.updated = Math.max(lU, rU);
+  return JSON.stringify(stripLocal(S)) !== before;
+}
+function authErr(e) {
+  const m = String((e && (e.message || e.error_description || e.msg)) || e || ''); const c = (e && e.code) || '';
+  if (/invalid login credentials/i.test(m) || c === 'invalid_credentials') return 'Identifiant ou mot de passe incorrect.';
+  if (/email not confirmed/i.test(m) || c === 'email_not_confirmed') return 'Adresse pas encore confirmée : clique sur le lien reçu par e-mail, puis reconnecte-toi.';
+  if (/already registered|already been registered/i.test(m) || c === 'user_already_exists') return 'Un compte existe déjà avec cette adresse e-mail.';
+  if (/rate limit|too many/i.test(m) || /rate_limit/.test(c)) return 'Trop de tentatives ou d’e-mails envoyés. Réessaie dans quelques minutes.';
+  if (/weak|at least|should be/i.test(m) && /password/i.test(m)) return 'Mot de passe trop faible : 8 caractères minimum.';
+  if (/invalid.*email|email.*invalid|unable to validate email/i.test(m)) return 'Adresse e-mail invalide.';
+  if (/database error saving new user/i.test(m)) return 'Inscription refusée par le serveur (nom d’utilisateur déjà pris ?).';
+  if (/failed to fetch|networkerror|load failed/i.test(m)) return 'Serveur injoignable : vérifie ta connexion Internet.';
+  if (/same.*password|different from the old/i.test(m)) return 'Le nouveau mot de passe doit être différent de l’ancien.';
+  return m || 'Une erreur est survenue.';
+}
+const Cloud = { sb: null, user: null, profile: null, on: false, ready: false, timer: null, writing: false, again: false, lastSync: 0, offline: false,
+  available() { return !!(CFG && CFG.url && CFG.key && window.supabase && window.supabase.createClient); },
+  name() { return (this.profile && this.profile.username) || (this.user && ((this.user.user_metadata || {}).username || this.user.email)) || ''; },
+  async init() {
+    if (!this.available()) { this.ready = true; return; }
+    try {
+      this.sb = window.supabase.createClient(CFG.url, CFG.key, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: 'academie-auth' } });
+      this.sb.auth.onAuthStateChange((ev, session) => {
+        if (ev === 'PASSWORD_RECOVERY') { AUTH.mode = 'newpass'; AUTH.msg = 'Choisis ton nouveau mot de passe.'; AUTH.err = ''; setTimeout(() => { location.hash = 'compte'; }, 0); }
+        const u = session ? session.user : null; const was = this.user && this.user.id; this.user = u;
+        if (u && u.id !== was) setTimeout(() => this.onLogin(), 0);
+        else if (!u && was) setTimeout(() => this.onLogout(), 0);
+      });
+      await this.sb.auth.getSession();
+    } catch (e) { this.offline = true; }
+    this.ready = true; chrome(); if (curHash() === 'compte') rerender();
+  },
+  async onLogin() {
+    const uid = this.user && this.user.id; if (!uid) return;
+    try {
+      const [p, g] = await Promise.all([
+        this.sb.from('profiles').select('username').eq('id', uid).maybeSingle(),
+        this.sb.from('w203_progress').select('state').eq('user_id', uid).maybeSingle()]);
+      if (g.error) throw g.error;
+      this.profile = p.data || null;
+      if (S.owner && S.owner !== uid) S = fresh();
+      const guest = !S.owner && hasProgress();
+      if (guest) S.dirty = true; else if (!S.owner) S.dirty = false;
+      if (g.data && g.data.state) mergeRemote(g.data.state); else S.dirty = true;
+      S.owner = uid; store(); this.on = true; this.offline = false;
+      await this.flush();
+      if (guest && g.data && g.data.state) toast('Ta progression locale a été ajoutée à ton compte.');
+    } catch (e) { this.offline = true; }
+    chrome(); softRender();
+  },
+  onLogout() {
+    this.on = false; this.profile = null; S = fresh(); store(); AUTH.mode = 'login'; chrome(); softRender();
+  },
+  async pull() {
+    if (!this.on || !this.user) return;
+    try {
+      const g = await this.sb.from('w203_progress').select('state').eq('user_id', this.user.id).maybeSingle();
+      if (g.error) throw g.error;
+      if (g.data && g.data.state && mergeRemote(g.data.state)) { store(); softRender(); }
+      if (S.dirty) this.push(true);
+      this.offline = false;
+    } catch (e) { this.offline = true; }
+    chrome();
+  },
+  push(now) { if (!this.on) return; clearTimeout(this.timer); this.timer = setTimeout(() => this.flush(), now ? 50 : 1500); },
+  async flush() {
+    if (!this.on || !this.user) return;
+    if (this.writing) { this.again = true; return; }
+    this.writing = true;
+    try {
+      const r = await this.sb.from('w203_progress').upsert({ user_id: this.user.id, state: stripLocal(S) }, { onConflict: 'user_id' });
+      if (r.error) throw r.error;
+      S.dirty = false; store(); this.lastSync = Date.now(); this.offline = false;
+    } catch (e) { this.offline = true; }
+    this.writing = false; chrome();
+    if (this.again) { this.again = false; this.flush(); }
+  }
+};
 
 /* ---------- XP & rangs ---------- */
 const RANKS = [[0, 'Grand débutant'], [150, 'Apprenti'], [500, 'Mécano'], [1000, 'Mécano confirmé'], [1600, 'Technicien'], [2300, 'Expert W203']];
@@ -3355,7 +3477,8 @@ const P = {
   gauge: '<path d="M4 16a8 8 0 1 1 16 0"/><path d="M12 16l4-5"/><circle cx="12" cy="16" r="1.2"/>',
   drop: '<path d="M12 3c3 4.5 6 7.6 6 11a6 6 0 0 1-12 0c0-3.4 3-6.5 6-11z"/>',
   shuffle: '<path d="M4 7h3c5 0 5 10 10 10h3"/><path d="M4 17h3c2 0 3-1.5 4-3.5M13.5 9.5c1-1.5 2-2.5 3.5-2.5h3"/><path d="M18 4l3 3-3 3M18 14l3 3-3 3"/>',
-  close: '<path d="M6 6l12 12M18 6L6 18"/>'
+  close: '<path d="M6 6l12 12M18 6L6 18"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>'
 };
 const ic = (n) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n]}</svg>`;
 const srcBadge = (k) => W.h.s(k);
@@ -3663,14 +3786,61 @@ function vGarage() {
     <label class="lbl">Notes, pièces, fluides, observations<textarea class="input" id="lg-notes" placeholder="Références, couples utilisés, état constaté…"></textarea></label>
     <div><button class="btn" data-act="log-add">Ajouter au carnet</button></div></div>
     <div class="list-box" id="log-list">${logRows()}</div><textarea class="input" id="copy-fallback" hidden readonly></textarea></section>
-  <section class="section"><h2>Progression</h2><div class="card row" style="justify-content:space-between"><span class="muted">${doneCount()}/${LESSONS.length} leçons · ${xp()} XP</span><button class="btn ghost small" data-act="reset-progress" id="reset-btn">Remettre la progression à zéro</button></div></section>`;
+  <section class="section"><h2>Progression</h2><div class="card row" style="justify-content:space-between"><span class="muted">${doneCount()}/${LESSONS.length} leçons · ${xp()} XP${Cloud.available() ? (Cloud.on ? ' · synchronisé avec ton compte' : ' · <a href="#compte">connecte-toi pour synchroniser</a>') : ''}</span><button class="btn ghost small" data-act="reset-progress" id="reset-btn">Remettre la progression à zéro</button></div></section>`;
+}
+
+/* ---------- Compte ---------- */
+function curHash() { return decodeURIComponent((location.hash || '').slice(1)) || 'accueil'; }
+function softRender() { const a = document.activeElement; if (a && /input|textarea|select/i.test(a.tagName) && view.contains(a)) { updateXp(); renderRail(curHash()); return; } rerender(); }
+function chrome() {
+  const bar = document.querySelector('.topbar'); if (!bar) return;
+  let b = $('#acct-btn');
+  if (!Cloud.available()) { if (b) b.remove(); return; }
+  if (!b) { b = document.createElement('a'); b.id = 'acct-btn'; b.className = 'icon-btn'; b.href = '#compte'; bar.insertBefore(b, bar.querySelector('[data-open-search]')); }
+  const st = Cloud.on ? (Cloud.offline ? 'off' : 'ok') : '';
+  b.innerHTML = ic('user') + '<span class="lbl">' + (Cloud.on ? esc(Cloud.name()) : 'Connexion') + '</span>' + (st ? '<i class="acct-dot ' + st + '"></i>' : '');
+  b.setAttribute('aria-label', Cloud.on ? 'Compte : ' + Cloud.name() + (Cloud.offline ? ' (hors ligne)' : ' (synchronisé)') : 'Se connecter');
+  updateXp();
+}
+function acctSay(err, msg) { AUTH.err = err || ''; AUTH.msg = msg || ''; const el = $('#acct-msg'); if (el) el.innerHTML = acctMsg(); }
+function acctMsg() { return (AUTH.err ? `<div class="callout danger"><p>${esc(AUTH.err)}</p></div>` : '') + (AUTH.msg ? `<div class="callout tip"><p>${esc(AUTH.msg)}</p></div>` : ''); }
+function vCompte() {
+  const head = (t) => `<div class="stack" style="gap:6px;margin-bottom:16px"><p class="eyebrow">Synchronisation</p><h1>${t}</h1></div>`;
+  if (!Cloud.available()) return head('Compte') + `<div class="card stack" style="gap:10px;max-width:640px"><p style="margin:0">La synchronisation entre appareils fonctionne sur la version en ligne de l’Académie.</p><p style="margin:0"><a href="https://adamfast-tech.github.io/academie-w203-c240/" target="_blank" rel="noopener">adamfast-tech.github.io/academie-w203-c240</a></p></div>`;
+  if (!Cloud.ready) return head('Compte') + '<div class="empty">Connexion au serveur…</div>';
+  const field = (id, label, type, ac, extra) => `<label class="lbl">${label}<input class="input" id="${id}" name="${id.split('-').pop()}" type="${type}" autocomplete="${ac}"${extra || ''}></label>`;
+  const shared = '<p class="muted" style="margin:0;font-size:.88rem">Même compte que sur tes autres académies : un seul identifiant pour tout.</p>';
+  let body;
+  if (Cloud.user && AUTH.mode !== 'newpass') {
+    const when = Cloud.lastSync ? new Date(Cloud.lastSync).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
+    body = `<div class="card stack" style="gap:12px">
+      <div class="row" style="justify-content:space-between"><div><b style="font-size:1.1rem">${esc(Cloud.name())}</b><br><span class="muted" style="font-size:.9rem">${esc(Cloud.user.email || '')}</span></div>
+      <span class="status ${Cloud.offline ? 'afaire' : 'fait'}">${Cloud.offline ? 'Hors ligne' : 'Synchronisé'}</span></div>
+      <p class="muted" style="margin:0;font-size:.9rem">Leçons, quiz, ta voiture, tes dossiers, ton carnet, tes échéances et ton outillage sont enregistrés sur ton compte${when ? ' · dernière synchronisation à ' + when : ''}.</p>
+      <div class="row"><button class="btn quiet small" data-act="acct-sync">Synchroniser maintenant</button><button class="btn quiet small" data-act="acct-pwd">Changer le mot de passe</button><button class="btn ghost small" data-act="acct-logout">Se déconnecter</button></div>${shared}</div>`;
+  } else if (AUTH.mode === 'signup') {
+    body = `<form class="card stack" style="gap:12px" data-form="signup" novalidate>${field('su-username', 'Nom d’utilisateur', 'text', 'username', ' maxlength="24"')}${field('su-email', 'E-mail', 'email', 'email')}${field('su-password', 'Mot de passe (8 caractères minimum)', 'password', 'new-password')}${field('su-password2', 'Confirme le mot de passe', 'password', 'new-password')}
+      <div class="row"><button class="btn" type="submit">Créer mon compte</button><button class="btn ghost small" type="button" data-act="acct-mode" data-m="login">J’ai déjà un compte</button></div>${shared}</form>`;
+  } else if (AUTH.mode === 'forgot') {
+    body = `<form class="card stack" style="gap:12px" data-form="forgot" novalidate>${field('fg-email', 'E-mail du compte', 'email', 'email')}
+      <div class="row"><button class="btn" type="submit">Recevoir un lien</button><button class="btn ghost small" type="button" data-act="acct-mode" data-m="login">Retour</button></div></form>`;
+  } else if (AUTH.mode === 'newpass') {
+    body = `<form class="card stack" style="gap:12px" data-form="newpass" novalidate>${field('np-password', 'Nouveau mot de passe (8 caractères minimum)', 'password', 'new-password')}${field('np-password2', 'Confirme le mot de passe', 'password', 'new-password')}
+      <div class="row"><button class="btn" type="submit">Enregistrer</button>${Cloud.user ? '<button class="btn ghost small" type="button" data-act="acct-mode" data-m="login">Annuler</button>' : ''}</div></form>`;
+  } else {
+    body = `<form class="card stack" style="gap:12px" data-form="login" novalidate>${field('li-login', 'E-mail ou nom d’utilisateur', 'text', 'username')}${field('li-password', 'Mot de passe', 'password', 'current-password')}
+      <div class="row"><button class="btn" type="submit">Se connecter</button><button class="btn ghost small" type="button" data-act="acct-mode" data-m="signup">Créer un compte</button><button class="btn ghost small" type="button" data-act="acct-mode" data-m="forgot">Mot de passe oublié</button></div>${shared}</form>`;
+  }
+  return head(Cloud.user && AUTH.mode !== 'newpass' ? 'Ton compte' : (AUTH.mode === 'signup' ? 'Créer un compte' : AUTH.mode === 'forgot' ? 'Mot de passe oublié' : AUTH.mode === 'newpass' ? 'Nouveau mot de passe' : 'Connexion'))
+    + `<div class="stack" style="gap:14px;max-width:560px"><div id="acct-msg" class="stack" style="gap:8px">${acctMsg()}</div>${body}
+    <p class="muted" style="margin:0;font-size:.86rem">Sans compte, tout reste enregistré dans ce navigateur. Avec un compte, ta progression te suit sur tous tes appareils.</p></div>`;
 }
 
 /* ---------- Rail & navigation ---------- */
 function renderRail(h) {
   const rail = $('#rail'); if (!rail) return;
   const curMod = h.indexOf('m-') === 0 ? h.slice(2) : (h.indexOf('l-') === 0 && LMAP[h.slice(2)] ? LMAP[h.slice(2)].mod.id : '');
-  const nav = [['accueil', 'home', 'Accueil'], ['cursus', 'book', 'Cursus'], ['diag', 'pulse', 'Diagnostic'], ['ref', 'wrench', 'Références'], ['garage', 'car', 'Mon garage'], ['revision', 'shuffle', 'Révision']];
+  const nav = [['accueil', 'home', 'Accueil'], ['cursus', 'book', 'Cursus'], ['diag', 'pulse', 'Diagnostic'], ['ref', 'wrench', 'Références'], ['garage', 'car', 'Mon garage'], ['revision', 'shuffle', 'Révision']].concat(Cloud.available() ? [['compte', 'user', 'Compte']] : []);
   const on = navKey(h);
   rail.innerHTML = `<nav class="rail-nav">${nav.map((n) => `<a href="#${n[0]}" class="${on === n[0] || (n[0] === 'revision' && h === 'revision') ? 'on' : ''}">${ic(n[1])}${n[2]}</a>`).join('')}</nav>
   <h4>Modules</h4><div class="rail-mods">${W.modules.map((m) => { const [d, n] = modProg(m); return `<a href="#m-${m.id}" class="${curMod === m.id ? 'on' : ''}"><span class="c">${m.code}</span><span>${m.title}</span><span class="p tnum">${d}/${n}</span></a>`; }).join('')}</div>`;
@@ -3681,6 +3851,7 @@ function navKey(h) {
   if (h === 'diag' || h === 'codes' || h.indexOf('t-') === 0) return 'diag';
   if (h === 'ref' || h.indexOf('ref-') === 0) return 'ref';
   if (h === 'garage') return 'garage';
+  if (h === 'compte') return 'compte';
   return 'accueil';
 }
 function setTabbar(h) {
@@ -3701,6 +3872,7 @@ function route() {
   else if (h === 'ref' || h.indexOf('ref-') === 0) html = vRef(h === 'ref' ? 'couples' : h.slice(4));
   else if (h === 'garage') html = vGarage();
   else if (h === 'revision') html = vRevision();
+  else if (h === 'compte') html = vCompte();
   else html = vHome();
   view.innerHTML = html;
   renderRail(h); setTabbar(h); updateXp(); afterRender();
@@ -3778,7 +3950,7 @@ view.addEventListener('click', (e) => {
     S.log.push({ id: 'x' + Date.now(), date: $('#lg-date').value || new Date().toISOString().slice(0, 10), km: $('#lg-km').value, what, notes: $('#lg-notes').value.trim() });
     save(); $('#lg-what').value = ''; $('#lg-notes').value = ''; $('#log-list').innerHTML = logRows(); toast('Ajouté au carnet');
   } else if (act === 'log-del') {
-    S.log = S.log.filter((x) => x.id !== b.dataset.id); save(); $('#log-list').innerHTML = logRows(); toast('Entrée supprimée');
+    S.log = S.log.filter((x) => x.id !== b.dataset.id); S.deleted[b.dataset.id] = Date.now(); save(); $('#log-list').innerHTML = logRows(); toast('Entrée supprimée');
   } else if (act === 'copy-log') {
     const txt = logText();
     const fallback = () => { const ta = $('#copy-fallback'); ta.hidden = false; ta.value = txt; ta.focus(); ta.select(); toast('Texte sélectionné : copie-le manuellement'); };
@@ -3786,10 +3958,18 @@ view.addEventListener('click', (e) => {
   } else if (act === 'dos-add') {
     S.dossiers.push({ id: 'd' + Date.now(), title: 'Nouveau dossier', status: 'afaire', lesson: '', notes: '' }); save(); rerender();
   } else if (act === 'dos-del') {
-    S.dossiers = S.dossiers.filter((d) => d.id !== b.dataset.id); save(); rerender(); toast('Dossier supprimé');
+    S.dossiers = S.dossiers.filter((d) => d.id !== b.dataset.id); S.deleted[b.dataset.id] = Date.now(); save(); rerender(); toast('Dossier supprimé');
+  } else if (act === 'acct-mode') {
+    AUTH.mode = b.dataset.m; AUTH.err = ''; AUTH.msg = ''; rerender();
+  } else if (act === 'acct-pwd') {
+    AUTH.mode = 'newpass'; AUTH.err = ''; AUTH.msg = ''; rerender();
+  } else if (act === 'acct-sync') {
+    b.disabled = true; Cloud.pull().then(() => Cloud.flush()).then(() => { toast(Cloud.offline ? 'Serveur injoignable' : 'Synchronisé'); rerender(); });
+  } else if (act === 'acct-logout') {
+    b.disabled = true; Promise.resolve(Cloud.flush()).then(() => Cloud.sb.auth.signOut()).then(() => toast('Déconnecté')).catch(() => toast('Déconnexion impossible'));
   } else if (act === 'reset-progress') {
     if (b.dataset.armed !== '1') { b.dataset.armed = '1'; b.textContent = 'Confirmer la remise à zéro'; b.classList.remove('ghost'); return; }
-    S.done = {}; S.quiz = {}; S.last = ''; Object.keys(QS).forEach((k) => delete QS[k]); save(); rerender(); toast('Progression remise à zéro');
+    S.done = {}; S.quiz = {}; S.last = ''; S.resetAt = Date.now(); Object.keys(QS).forEach((k) => delete QS[k]); save(); rerender(); toast('Progression remise à zéro');
   }
 });
 
@@ -3849,8 +4029,63 @@ document.addEventListener('keydown', (e) => {
   if (e.key === '/' && panel.hidden && !/input|textarea|select/i.test(document.activeElement.tagName)) { e.preventDefault(); openSearch(); }
 });
 
+view.addEventListener('submit', async (e) => {
+  const f = e.target.closest('form[data-form]'); if (!f) return;
+  e.preventDefault(); if (!Cloud.sb || AUTH.busy) return;
+  const kind = f.dataset.form, fd = new FormData(f), v = (k) => String(fd.get(k) || '').trim();
+  const btn = f.querySelector('button[type="submit"]'), label = btn ? btn.textContent : '';
+  const busy = (x) => { AUTH.busy = x; if (btn) { btn.disabled = x; btn.textContent = x ? 'Patiente…' : label; } };
+  const redirect = location.origin + location.pathname;
+  acctSay('', ''); busy(true);
+  try {
+    if (kind === 'login') {
+      const id = v('login'), pwd = String(fd.get('password') || '');
+      if (!id || !pwd) { acctSay('Renseigne ton e-mail (ou nom d’utilisateur) et ton mot de passe.'); return; }
+      let email = id;
+      if (!id.includes('@')) {
+        const q = await Cloud.sb.rpc('resolve_login', { p_login: id, p_password: pwd });
+        if (q.error) { acctSay(authErr(q.error)); return; }
+        if (!q.data) { acctSay('Identifiant ou mot de passe incorrect. Après 10 essais, ce nom d’utilisateur est bloqué 15 minutes.'); return; }
+        email = q.data;
+      }
+      const r = await Cloud.sb.auth.signInWithPassword({ email, password: pwd });
+      if (r.error) { acctSay(authErr(r.error)); return; }
+      AUTH.mode = 'login'; toast('Connecté');
+    } else if (kind === 'signup') {
+      const u = v('username'), em = v('email'), pw = String(fd.get('password') || '');
+      if (!/^[A-Za-z0-9._-]{3,24}$/.test(u)) { acctSay('Nom d’utilisateur : 3 à 24 caractères, lettres sans accent, chiffres, point, tiret ou soulignement.'); return; }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { acctSay('Adresse e-mail invalide.'); return; }
+      if (pw.length < 8) { acctSay('Mot de passe : 8 caractères minimum.'); return; }
+      if (pw !== String(fd.get('password2') || '')) { acctSay('Les deux mots de passe ne correspondent pas.'); return; }
+      const a = await Cloud.sb.rpc('username_available', { p_username: u });
+      if (a.error) { acctSay(authErr(a.error)); return; }
+      if (a.data === false) { acctSay('Ce nom d’utilisateur est déjà pris.'); return; }
+      const r = await Cloud.sb.auth.signUp({ email: em, password: pw, options: { data: { username: u }, emailRedirectTo: redirect } });
+      if (r.error) { acctSay(authErr(r.error)); return; }
+      if (r.data && r.data.user && Array.isArray(r.data.user.identities) && r.data.user.identities.length === 0) { acctSay('Un compte existe déjà avec cette adresse e-mail.'); return; }
+      if (!r.data.session) { AUTH.mode = 'login'; rerender(); acctSay('', 'Compte créé. Ouvre le lien de confirmation reçu par e-mail, puis connecte-toi ici.'); return; }
+      toast('Compte créé. Bienvenue, ' + u + ' !');
+    } else if (kind === 'forgot') {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v('email'))) { acctSay('Adresse e-mail invalide.'); return; }
+      const r = await Cloud.sb.auth.resetPasswordForEmail(v('email'), { redirectTo: redirect });
+      if (r.error) { acctSay(authErr(r.error)); return; }
+      acctSay('', 'Si un compte existe pour cette adresse, un lien vient d’être envoyé. Pense à vérifier les indésirables.');
+    } else if (kind === 'newpass') {
+      const p1 = String(fd.get('password') || ''), p2 = String(fd.get('password2') || '');
+      if (p1.length < 8) { acctSay('Mot de passe : 8 caractères minimum.'); return; }
+      if (p1 !== p2) { acctSay('Les deux mots de passe ne correspondent pas.'); return; }
+      const r = await Cloud.sb.auth.updateUser({ password: p1 });
+      if (r.error) { acctSay(authErr(r.error)); return; }
+      AUTH.mode = 'login'; rerender(); acctSay('', 'Mot de passe modifié.');
+    }
+  } catch (err) { acctSay(authErr(err)); }
+  finally { busy(false); }
+});
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') Cloud.pull(); else if (Cloud.on && S.dirty) Cloud.flush(); });
+
 window.addEventListener('hashchange', route);
 route();
+Cloud.init();
 })();
 
 </script>
