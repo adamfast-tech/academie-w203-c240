@@ -11,7 +11,7 @@ Cursus complet pour entretenir, diagnostiquer et réparer soi-même une **Merced
 - Diagnostic guidé (9 parcours par symptôme) et 46 codes défaut commentés
 - Couples de serrage, fluides et capacités, chaque valeur avec sa source (WIS, Haynes, fabricant, terrain) ; ce qui n'est pas confirmé est marqué « À vérifier »
 - Mon garage : dossiers en cours, carnet d'entretien, échéances calculées selon le kilométrage, avec jauge d'usure
-- 8 schémas animés et manipulables : cycle 4 temps, ordre d'allumage du V6, admission et fuite d'air, refroidissement et thermostat, direction assistée et prise d'air, relais, lecteur de corrections de mélange, testeur de batterie
+- 114 schémas interactifs, au moins un par leçon : animations, simulateurs (circuit électrique, freinage, refroidissement, oscilloscope, données enregistrées…), cartes à explorer avec défi, procédures pas à pas, quiz de tri, remises en ordre, check-lists synchronisées
 - Cartes mémoire du vocabulaire (répétition espacée, glisser à droite ou à gauche), carte du parcours, sommaire de leçon
 - Fonctionne hors ligne une fois ouvert
 
