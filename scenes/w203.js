@@ -5,6 +5,8 @@ import { THREE, createStage, cssVar, reduced, merge, at, seg, tube, nameAt } fro
 /* Cotes en décimètres : longueur 45,3 · largeur 17,3 · hauteur 14,3 · empattement 27,15. Avant vers +x, droite vers +z. */
 const FA = 14.7, RA = -12.45, WR = 3.16, TRACK = 7.45, X0 = -22.65, X1 = 22.6;
 const PAINTS = [['Argent brillant', 0xd3d8de, 0.62, 0.3], ['Noir obsidienne', 0x0c0d10, 0.55, 0.22], ['Bleu nuit', 0x14284a, 0.6, 0.26], ['Vert aventurine', 0x1d3a30, 0.6, 0.28], ['Rouge', 0x7a1418, 0.45, 0.25], ['Blanc', 0xe9ebec, 0.1, 0.35]];
+/* Maquettes détaillées accessibles depuis chaque système : [titre, leçon]. */
+const MAQ = { m112: [['Le V6 en 3D', 'm112-archi'], ['Le refroidissement en 3D', 'refroid-m112']], boite: [['La boîte 722.6 en 3D', 'b7226']], freinage: [['Le frein à disque en 3D', 'freins-av']], suspension: [['Le train avant en 3D', 'train-av']] };
 const SYS = [
   ['m112', 'Moteur', [15.2, 7.4, 0]], ['boite', 'Boîte et transmission', [4, 4.2, 0]], ['freinage', 'Freins', [FA, 3.2, 8.2]],
   ['suspension', 'Trains roulants', [RA, 6.6, 7]], ['direction', 'Direction', [6.2, 9.6, -3.8]], ['elec-w203', 'Électricité', [11.6, 7.6, 5.2]],
@@ -380,8 +382,9 @@ export function mount(el) {
   /* ---- Repères cliquables et commandes ---- */
   const mods = (window.W203 && window.W203.modules) || [], ui = el.querySelector('[data-ui]'), layer = document.createElement('div'); layer.className = 'hot3d'; host.appendChild(layer);
   const dots = SYS.map(([id, label, pos]) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'hot3d-dot'; b.dataset.sys = id; b.setAttribute('aria-label', label); b.innerHTML = `<span>${label}</span>`; layer.appendChild(b); b.addEventListener('click', () => choose(id)); return { id, b, v: new THREE.Vector3(...pos) }; });
+  const more = '<div class="vchips"><span class="viz-note">Maquettes détaillées</span>' + Object.keys(MAQ).flatMap((k) => MAQ[k]).map(([t, l]) => `<a class="vchip" href="#l-${l}">${t.replace(' en 3D', '')}</a>`).join('') + '<a class="vchip" href="#ref-schemas">Toutes</a></div>';
   const hint = '<p class="viz-note">Glisse pour tourner la voiture, pince pour zoomer. Touche un système : la carrosserie devient transparente. Touche ensuite une pièce pour connaître son nom.</p>';
-  ui.innerHTML = `<div class="vchips" role="group" aria-label="Systèmes de la voiture">${SYS.map(([id, label]) => `<button class="vbtn sm" type="button" data-sys="${id}" aria-pressed="false">${label}</button>`).join('')}<label class="vtoggle"><input type="checkbox" data-xray><span class="vtrack" aria-hidden="true"></span>Radiographie</label></div><div class="vchips"><span class="viz-note">Ouvrir</span>${[['0', 'Capot'], ['d', 'Portes'], ['1', 'Coffre']].map(([k, t]) => `<label class="vtoggle"><input type="checkbox" data-open="${k}"><span class="vtrack" aria-hidden="true"></span>${t}</label>`).join('')}<span class="viz-note" style="margin-left:8px">Teinte</span>${PAINTS.map(([n, c], i) => `<button type="button" class="swatch3d${i ? '' : ' sel'}" data-paint="${i}" style="--c:#${c.toString(16).padStart(6, '0')}" aria-label="${n}" title="${n}"></button>`).join('')}</div><div class="hot3d-card" data-card aria-live="polite">${hint}</div>`;
+  ui.innerHTML = `<div class="vchips" role="group" aria-label="Systèmes de la voiture">${SYS.map(([id, label]) => `<button class="vbtn sm" type="button" data-sys="${id}" aria-pressed="false">${label}</button>`).join('')}<label class="vtoggle"><input type="checkbox" data-xray><span class="vtrack" aria-hidden="true"></span>Radiographie</label></div><div class="vchips"><span class="viz-note">Ouvrir</span>${[['0', 'Capot'], ['d', 'Portes'], ['1', 'Coffre']].map(([k, t]) => `<label class="vtoggle"><input type="checkbox" data-open="${k}"><span class="vtrack" aria-hidden="true"></span>${t}</label>`).join('')}<span class="viz-note" style="margin-left:8px">Teinte</span>${PAINTS.map(([n, c], i) => `<button type="button" class="swatch3d${i ? '' : ' sel'}" data-paint="${i}" style="--c:#${c.toString(16).padStart(6, '0')}" aria-label="${n}" title="${n}"></button>`).join('')}</div><div class="hot3d-card" data-card aria-live="polite">${hint}</div>${more}`;
   ui.querySelectorAll('.vbtn[data-sys]').forEach((b) => b.addEventListener('click', () => choose(b.dataset.sys)));
   const xr = ui.querySelector('[data-xray]');
   ui.querySelectorAll('[data-open]').forEach((c) => c.addEventListener('change', () => { const k = c.dataset.open, on = c.checked ? 1 : 0; spin = false; if (k === 'd') panels.slice(2).forEach((pn) => { pn.t = on; }); else panels[+k].t = on; if (on) st.view(k === '1' ? 2.5 : 0.85, 0.42); st.refresh(); }));
@@ -395,7 +398,7 @@ export function mount(el) {
     sel = sel === id ? null : id; spin = false;
     el.querySelectorAll('[data-sys]').forEach((b) => { const on = b.dataset.sys === sel; b.classList.toggle('sel', on); if (b.hasAttribute('aria-pressed')) b.setAttribute('aria-pressed', on ? 'true' : 'false'); });
     const m = mods.find((x) => x.id === sel), card = ui.querySelector('[data-card]');
-    card.innerHTML = m ? `<div><p class="eyebrow">${m.code} · ${m.lessons.length} leçons</p><b>${m.title}</b><p>${m.desc}</p><p class="piece" data-piece></p></div><a class="btn small" href="#m-${m.id}">Ouvrir le module</a>` : hint;
+    card.innerHTML = m ? `<div><p class="eyebrow">${m.code} · ${m.lessons.length} leçons</p><b>${m.title}</b><p>${m.desc}</p><p class="piece" data-piece></p></div><div class="row" style="gap:8px;flex-wrap:wrap">${(MAQ[m.id] || []).map(([t, l]) => `<a class="btn small" href="#l-${l}">${t}</a>`).join('')}<a class="btn small quiet" href="#m-${m.id}">Ouvrir le module</a></div>` : hint;
     xrayT = manual || (sel && sel !== 'carrosserie') ? 1 : 0; xr.checked = xrayT === 1;
     st.refresh();
   }

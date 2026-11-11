@@ -527,6 +527,7 @@ ol.steps>li:not(:last-child)::after{content:"";position:absolute;left:14px;top:3
 .vtoggle input:focus-visible+.vtrack{outline:2px solid var(--accent);outline-offset:2px}
 .vchips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .vchip{font-family:var(--f-mono);font-size:.75rem;padding:4px 10px;border-radius:999px;background:var(--surface-2);color:var(--muted);transition:background-color .2s,color .2s}
+a.vchip{text-decoration:none}a.vchip:hover{color:var(--ink)}
 .vchip.on{background:var(--accent);color:var(--on-accent)}
 .vsep{color:var(--muted);font-size:.8rem}
 .viz-read{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
@@ -8374,16 +8375,16 @@ function vzView(id) {
   return `<div data-viz="${v.id}"></div>${ls.length ? `<div class="links">${ls.map(linkFor).join('')}</div>` : ''}`;
 }
 function refSchemas() {
-  const all = Viz.list();
-  if (!VZ_CUR || !all.some((v) => v.id === VZ_CUR)) VZ_CUR = all[0].id;
+  const every = Viz.list(), is3d = (v) => /3d$/.test(v.id), m3 = every.filter(is3d), all = every.filter((v) => !is3d(v));
+  if (!VZ_CUR || !every.some((v) => v.id === VZ_CUR)) VZ_CUR = (m3.find((v) => v.id === 'm1123d') || every[0]).id;
   const first = (v) => { const ls = vzLessonsOf(v); return ls.length ? LMAP[ls[0]] : null; };
   const groups = W.modules.map((m) => ({ m, items: all.filter((v) => { const f = first(v); return f && f.mod === m; }).sort((a, b) => LESSONS.indexOf(first(a)) - LESSONS.indexOf(first(b))) })).filter((g) => g.items.length);
   const orphans = all.filter((v) => !first(v));
   const btn = (v) => `<button type="button" class="vz-item${v.id === VZ_CUR ? ' on' : ''}" data-act="vz-open" data-v="${v.id}">${v.title}</button>`;
-  return `<p class="muted" style="margin:0;max-width:66ch">${all.length} schémas, simulateurs et défis à manipuler. Choisis-en un dans la liste : il s’ouvre ici. Chacun renvoie aux leçons où il sert.</p>
+  return `<p class="muted" style="margin:0;max-width:66ch">${every.length} schémas, simulateurs et défis à manipuler, dont ${m3.length} maquettes 3D. Choisis-en un dans la liste : il s’ouvre ici. Chacun renvoie aux leçons où il sert.</p>
   <div class="vz-view" id="vz-view">${vzView(VZ_CUR)}</div>
   <div class="filters"><input class="input" id="vz-q" type="search" placeholder="Chercher un schéma…" autocomplete="off"></div>
-  <div class="vz-cat">${groups.map((g) => `<div class="vz-g"><h4><span class="mono">${g.m.code}</span> ${esc(g.m.title)}</h4><div class="vz-items">${g.items.map(btn).join('')}</div></div>`).join('')}${orphans.length ? `<div class="vz-g"><h4>Autres</h4><div class="vz-items">${orphans.map(btn).join('')}</div></div>` : ''}</div>`;
+  <div class="vz-cat">${m3.length ? `<div class="vz-g"><h4>Maquettes 3D</h4><div class="vz-items">${m3.map(btn).join('')}</div></div>` : ''}${groups.map((g) => `<div class="vz-g"><h4><span class="mono">${g.m.code}</span> ${esc(g.m.title)}</h4><div class="vz-items">${g.items.map(btn).join('')}</div></div>`).join('')}${orphans.length ? `<div class="vz-g"><h4>Autres</h4><div class="vz-items">${orphans.map(btn).join('')}</div></div>` : ''}</div>`;
 }
 function refLinks() {
   return `<div class="list-box">${R.links.map((l) => `<div class="gl-item"><b><a href="${l[1]}" target="_blank" rel="noopener">${l[0]}</a></b><p class="muted">${l[2]}</p></div>`).join('')}</div>
