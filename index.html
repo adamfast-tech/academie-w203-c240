@@ -479,6 +479,21 @@ ol.steps>li:not(:last-child)::after{content:"";position:absolute;left:14px;top:3
 .stage3d-canvas:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .stage3d>.viz-note{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:16px}
 @container (max-width:560px){.stage3d{aspect-ratio:1/1}}
+.hot3d{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.hot3d-dot{position:absolute;left:0;top:0;width:0;height:0;padding:0;border:0;background:none;pointer-events:auto;cursor:pointer;color:var(--ink)}
+.hot3d-dot::before{content:"";position:absolute;left:-7px;top:-7px;width:14px;height:14px;border-radius:50%;background:var(--accent);border:2px solid var(--surface);box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 50%,transparent);animation:hot3d 2.4s ease-out infinite}
+.hot3d-dot::after{content:"";position:absolute;left:-18px;top:-18px;width:36px;height:36px}
+.hot3d-dot span{position:absolute;left:12px;top:-11px;white-space:nowrap;font-family:var(--f-mono);font-size:.68rem;letter-spacing:.04em;padding:3px 8px;border-radius:999px;background:color-mix(in srgb,var(--surface) 88%,transparent);border:1px solid var(--line);opacity:.0;transition:opacity .2s}
+.hot3d-dot:hover span,.hot3d-dot:focus-visible span,.hot3d-dot.sel span{opacity:1}
+.hot3d-dot.sel::before{background:var(--amber)}
+.hot3d-dot:focus-visible{outline:none}.hot3d-dot:focus-visible::before{outline:2px solid var(--ink);outline-offset:2px}
+@keyframes hot3d{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 55%,transparent)}100%{box-shadow:0 0 0 12px transparent}}
+@media (prefers-reduced-motion:reduce){.hot3d-dot::before{animation:none}}
+.hot3d-card{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;min-height:4.6em}
+.hot3d-card b{font-family:var(--f-display);font-size:1.2rem;font-weight:600}
+.hot3d-card p{margin:2px 0 0;font-size:.9rem;color:var(--muted)}
+.viz.home3d{margin:22px 0 0}.viz.home3d .stage3d{aspect-ratio:21/9;max-height:460px}
+@container (max-width:560px){.viz.home3d .stage3d{aspect-ratio:4/3}}
 .vbtn.sm{min-height:36px;padding:5px 12px;font-size:.8rem}
 .vbtn.sel{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .lg3d{display:inline-flex;align-items:center;gap:6px;font-size:.78rem;color:var(--muted);margin-right:8px}
@@ -4127,6 +4142,12 @@ window.Viz = (function () {
     title: 'Le M112 en 3D', lessons: ['m112-archi'],
     html() { return head(this.title, playBtn).replace('Schéma animé', 'Maquette 3D') + '<div class="stage3d" data-stage><p class="viz-note">Chargement de la maquette…</p></div><div class="stack" style="gap:10px" data-ui></div>'; },
     init(el) { stage3d(el, 'm112.js'); }
+  };
+
+  V.w2033d = {
+    title: 'Ta C 240 en transparence', lessons: [],
+    html() { return head(this.title, '').replace('Schéma animé', 'Maquette 3D') + '<div class="stage3d" data-stage><p class="viz-note">Chargement de la maquette…</p></div><div class="stack" style="gap:10px" data-ui></div>'; },
+    init(el) { el.classList.add('home3d'); stage3d(el, 'w203.js'); }
   };
 
   function mount(root) {
@@ -8035,6 +8056,7 @@ function vHome() {
   <p class="eyebrow">Académie · Mercedes-Benz C 240 · W203</p>
   <h1>De zéro à <em>mécano autonome</em></h1>
   <p class="lead">${W.modules.length} modules et ${LESSONS.length} leçons pour entretenir, diagnostiquer et réparer toi-même ta C 240. Couples de serrage, fluides, outillage et pannes connues du V6 M112, chacun avec sa source.</p>
+  <div data-viz="w2033d"></div>
   <div class="plate" aria-label="Plaque d’identité de la voiture">
     <div class="plate-top"><span>${esc(car.modele)}</span><span>Fiche d’identité</span></div>
     <div class="plate-grid">

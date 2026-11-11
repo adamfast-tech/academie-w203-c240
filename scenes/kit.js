@@ -76,7 +76,7 @@ export function createStage(host, opts) {
     if (vis && (on || settling || busy || dirty)) raf = requestAnimationFrame(tick); else last = 0;
   };
   function kick() { if (!raf && vis && !dead) raf = requestAnimationFrame(tick); }
-  const io = new IntersectionObserver((es) => { vis = es[0].isIntersecting; kick(); }); io.observe(host);
+  const io = new IntersectionObserver((es) => { if (!host.isConnected) { dispose(); return; } vis = es[0].isIntersecting; kick(); }); io.observe(host);
   function dispose() {
     if (dead) return; dead = true; io.disconnect(); ro.disconnect();
     scene.traverse((ob) => { if (ob.geometry) ob.geometry.dispose(); const m = ob.material; if (m) (Array.isArray(m) ? m : [m]).forEach((x) => { if (x.map) x.map.dispose(); x.dispose(); }); });
