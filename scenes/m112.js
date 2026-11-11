@@ -37,7 +37,7 @@ function ui(el) {
       <button class="vbtn sm" type="button" data-view="0,0.08">Face</button><button class="vbtn sm" type="button" data-view="0.65,0.36">3/4</button><button class="vbtn sm" type="button" data-view="1.5708,0.1">Côté</button><button class="vbtn sm" type="button" data-view="0,1.4">Dessus</button>
     </div>
     <div class="vchips"><button class="vbtn sm" type="button" data-step>Pas à pas : + 30°</button><span class="viz-note">Mets en pause, puis avance le vilebrequin cran par cran.</span></div>
-    <label class="vrange"><span style="text-align:left;min-width:0">Vitesse</span><input type="range" min="4" max="90" step="1" value="24" data-speed aria-label="Vitesse de rotation de la maquette"><span class="mono tnum" data-speedv></span></label>
+    <label class="vrange r3"><span style="text-align:left;min-width:0">Vitesse</span><input type="range" min="4" max="90" step="1" value="24" data-speed aria-label="Vitesse de rotation de la maquette"><span class="mono tnum" data-speedv></span></label>
     <div class="vchips" aria-hidden="true">${legend}</div>
     <p class="viz-note">Maquette simplifiée, proportions approximatives : elle montre le principe, pas les cotes. Glisse pour tourner, pince ou Ctrl + molette pour zoomer.</p>`;
 }

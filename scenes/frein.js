@@ -19,8 +19,8 @@ function ui(el, nm) {
   const parts = Object.keys(PARTS).map((k) => `<button class="vbtn sm" type="button" data-part="${k}" aria-pressed="false">${PARTS[k][0]}</button>`).join('');
   el.querySelector('[data-ui]').innerHTML = `
     <div class="viz-read"><div><small class="viz-note">Vitesse</small><br><b class="mono tnum" data-v></b></div><div><small class="viz-note">Disque</small><br><b class="mono tnum" data-t></b></div><div><small class="viz-note">Piston sorti de</small><br><b class="mono tnum" data-p></b></div><div><small class="viz-note">Garniture</small><br><b class="mono tnum" data-g></b></div></div>
-    <label class="vrange"><span style="text-align:left;min-width:0">Pédale</span><input type="range" min="0" max="100" step="1" value="0" data-pedal aria-label="Effort sur la pédale de frein"><span class="mono tnum" data-pedalv></span></label>
-    <label class="vrange"><span style="text-align:left;min-width:0">Usure</span><input type="range" min="0" max="100" step="1" value="0" data-wear aria-label="Usure des plaquettes"><span class="mono tnum" data-wearv></span></label>
+    <label class="vrange r3"><span style="text-align:left;min-width:0">Pédale</span><input type="range" min="0" max="100" step="1" value="0" data-pedal aria-label="Effort sur la pédale de frein"><span class="mono tnum" data-pedalv></span></label>
+    <label class="vrange r3"><span style="text-align:left;min-width:0">Usure</span><input type="range" min="0" max="100" step="1" value="0" data-wear aria-label="Usure des plaquettes"><span class="mono tnum" data-wearv></span></label>
     <div class="vchips" role="group" aria-label="Pièces du frein">${parts}</div>
     <p class="viz-desc" data-desc aria-live="polite">Appuie sur la pédale : le piston sort, l’étrier coulisse et les deux plaquettes pincent le disque.</p>
     <div class="vchips"><label class="vtoggle"><input type="checkbox" data-cut><span class="vtrack" aria-hidden="true"></span>Étrier en coupe</label>
