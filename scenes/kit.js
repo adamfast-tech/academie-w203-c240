@@ -8,16 +8,31 @@ export const cssVar = (n, fb) => (getComputedStyle(document.documentElement).get
 
 /* Fusionne des géométries (avec leur matrice) en une seule : un seul appel de dessin par matériau. */
 export function merge(list) {
-  const pos = [], nor = [];
+  const pos = [], nor = [], col = [], names = []; let tri = 0, tinted = false; const c = new THREE.Color();
   list.forEach((it) => {
-    const src = Array.isArray(it) ? it[0] : it, mat = Array.isArray(it) ? it[1] : null;
+    const src = Array.isArray(it) ? it[0] : it, mat = Array.isArray(it) ? it[1] : null, name = Array.isArray(it) ? it[2] : null, hex = Array.isArray(it) ? it[3] : null;
     const g = src.index ? src.toNonIndexed() : src.clone(); if (mat) g.applyMatrix4(mat);
     if (!g.attributes.normal) g.computeVertexNormals();
-    pos.push(g.attributes.position.array); nor.push(g.attributes.normal.array); g.dispose(); if (src !== g) src.dispose();
+    const n = g.attributes.position.count; pos.push(g.attributes.position.array); nor.push(g.attributes.normal.array);
+    c.set(hex == null ? 0xffffff : hex); if (hex != null) tinted = true; const ca = new Float32Array(n * 3); for (let i = 0; i < n; i++) { ca[i * 3] = c.r; ca[i * 3 + 1] = c.g; ca[i * 3 + 2] = c.b; } col.push(ca);
+    tri += n / 3; if (name) names.push([tri, name]); else if (names.length) names.push([tri, null]);
+    g.dispose(); if (src !== g) src.dispose();
   });
   const cat = (arrs) => { const n = arrs.reduce((a, x) => a + x.length, 0), out = new Float32Array(n); let o = 0; arrs.forEach((x) => { out.set(x, o); o += x.length; }); return out; };
-  const out = new THREE.BufferGeometry(); out.setAttribute('position', new THREE.BufferAttribute(cat(pos), 3)); out.setAttribute('normal', new THREE.BufferAttribute(cat(nor), 3)); return out;
+  const out = new THREE.BufferGeometry(); out.setAttribute('position', new THREE.BufferAttribute(cat(pos), 3)); out.setAttribute('normal', new THREE.BufferAttribute(cat(nor), 3));
+  if (tinted) out.setAttribute('color', new THREE.BufferAttribute(cat(col), 3));
+  out.userData.names = names; return out;
 }
+/* Nom de la pièce touchée dans une géométrie fusionnée (d'après l'indice du triangle). */
+export function nameAt(geo, face) { const n = geo.userData.names || []; for (let i = 0; i < n.length; i++) if (face < n[i][0]) return n[i][1]; return null; }
+/* Barre ou tuyau droit entre deux points. */
+export function seg(a, b, r, sides) {
+  const A = new THREE.Vector3(...a), B = new THREE.Vector3(...b), d = B.clone().sub(A), len = d.length();
+  const m = new THREE.Matrix4().compose(A.clone().add(B).multiplyScalar(0.5), new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()), new THREE.Vector3(1, 1, 1));
+  return [new THREE.CylinderGeometry(r, r, len, sides || 8), m];
+}
+/* Tuyau courbe passant par des points. */
+export function tube(pts, r, closed) { const c = new THREE.CatmullRomCurve3(pts.map((p) => new THREE.Vector3(...p)), !!closed, 'centripetal'); return new THREE.TubeGeometry(c, Math.max(8, pts.length * 7), r, 7, !!closed); }
 /* Matrice de pose : position, rotation (Euler XYZ), échelle. */
 export function at(x, y, z, rx, ry, rz, sx, sy, sz) { return new THREE.Matrix4().compose(new THREE.Vector3(x || 0, y || 0, z || 0), new THREE.Quaternion().setFromEuler(new THREE.Euler(rx || 0, ry || 0, rz || 0)), new THREE.Vector3(sx == null ? 1 : sx, sy == null ? (sx == null ? 1 : sx) : sy, sz == null ? (sx == null ? 1 : sx) : sz)); }
 
