@@ -2287,6 +2287,7 @@ ${key(['Caoutchouc fissuré ou couronne décalée = remplacement.', 'Trait de pe
   { id: 'refroid-m112', title: 'Thermostat, pompe à eau, ventilateur', min: 12,
     lead: 'Le circuit de refroidissement du M112 et ses pannes typiques sur la W203.',
     body: `
+<div data-viz="refroid3d"></div>
 <h2>Thermostat</h2>
 <p>Panne chronique sur la W203 : il reste ouvert ${s('frm')}.</p>
 <ul>
@@ -4157,6 +4158,11 @@ window.Viz = (function () {
     init(el) { stage3d(el, 'm112.js'); }
   };
 
+  V.refroid3d = {
+    title: 'Le circuit de refroidissement en 3D', lessons: ['refroid-m112', 'lubri-refroid', 'p-thermostat'],
+    html() { return head(this.title, playBtn).replace('Schéma animé', 'Maquette 3D') + '<div class="stage3d" data-stage><p class="viz-note">Chargement de la maquette…</p></div><div class="stack" style="gap:10px" data-ui></div>'; },
+    init(el) { stage3d(el, 'refroid.js'); }
+  };
   V.train3d = {
     title: 'Le train avant en 3D', lessons: ['train-av', 'bruits-train'],
     html() { return head(this.title, playBtn).replace('Schéma animé', 'Maquette 3D') + '<div class="stage3d" data-stage><p class="viz-note">Chargement de la maquette…</p></div><div class="stack" style="gap:10px" data-ui></div>'; },
