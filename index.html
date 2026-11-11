@@ -489,6 +489,9 @@ ol.steps>li:not(:last-child)::after{content:"";position:absolute;left:14px;top:3
 .hot3d-dot:focus-visible{outline:none}.hot3d-dot:focus-visible::before{outline:2px solid var(--ink);outline-offset:2px}
 @keyframes hot3d{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 55%,transparent)}100%{box-shadow:0 0 0 12px transparent}}
 @media (prefers-reduced-motion:reduce){.hot3d-dot::before{animation:none}}
+.swatch3d{width:26px;height:26px;border-radius:50%;border:2px solid var(--surface);box-shadow:0 0 0 1px var(--line);background:var(--c);cursor:pointer;padding:0}
+.swatch3d.sel{box-shadow:0 0 0 2px var(--accent)}
+.swatch3d:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 .hot3d-card{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;min-height:4.6em}
 .hot3d-card b{font-family:var(--f-display);font-size:1.2rem;font-weight:600}
 .hot3d-card p{margin:2px 0 0;font-size:.9rem;color:var(--muted)}

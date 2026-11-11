@@ -94,11 +94,14 @@ export function createStage(host, opts) {
   const size = () => { const w = host.clientWidth || 1, h = host.clientHeight || 1; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); dirty = true; kick(); };
   const ro = new ResizeObserver(size); ro.observe(host);
 
+  let pr = Math.min(2, window.devicePixelRatio || 1), slow = 0.016, nf = 0;
   let raf = 0, vis = true, on = !!o.autoplay && !reduced(), last = 0, dead = false;
   const tick = (now) => {
     raf = 0; if (dead) return;
     if (!host.isConnected) { dispose(); return; }
-    const dt = last ? Math.min(0.05, (now - last) / 1000) : 0; last = now;
+    const raw = last ? (now - last) / 1000 : 0, dt = Math.min(0.05, raw); last = now;
+    /* Qualité adaptative : si l'appareil peine, on baisse la résolution de rendu par paliers. */
+    if (raw > 0 && raw < 0.5) { slow = slow * 0.9 + raw * 0.1; if (++nf > 40 && slow > 0.03 && pr > 1) { pr = Math.max(1, pr - 0.5); renderer.setPixelRatio(pr); size(); nf = 0; slow = 0.016; } }
     const k = 1 - Math.pow(0.001, dt || 0.016);
     orbit.az += (orbit.taz - orbit.az) * k; orbit.el += (orbit.tel - orbit.el) * k; orbit.zoom += (orbit.tzoom - orbit.zoom) * k;
     const settling = Math.abs(orbit.taz - orbit.az) + Math.abs(orbit.tel - orbit.el) + Math.abs(orbit.tzoom - orbit.zoom) > 0.0005;

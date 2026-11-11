@@ -4,6 +4,7 @@ import { THREE, createStage, cssVar, reduced, merge, at, seg, tube, nameAt } fro
 
 /* Cotes en décimètres : longueur 45,3 · largeur 17,3 · hauteur 14,3 · empattement 27,15. Avant vers +x, droite vers +z. */
 const FA = 14.7, RA = -12.45, WR = 3.16, TRACK = 7.45, X0 = -22.65, X1 = 22.6;
+const PAINTS = [['Argent brillant', 0xd3d8de, 0.62, 0.3], ['Noir obsidienne', 0x0c0d10, 0.55, 0.22], ['Bleu nuit', 0x14284a, 0.6, 0.26], ['Vert aventurine', 0x1d3a30, 0.6, 0.28], ['Rouge', 0x7a1418, 0.45, 0.25], ['Blanc', 0xe9ebec, 0.1, 0.35]];
 const SYS = [
   ['m112', 'Moteur', [15.2, 7.4, 0]], ['boite', 'Boîte et transmission', [4, 4.2, 0]], ['freinage', 'Freins', [FA, 3.2, 8.2]],
   ['suspension', 'Trains roulants', [RA, 6.6, 7]], ['direction', 'Direction', [6.2, 9.6, -3.8]], ['elec-w203', 'Électricité', [11.6, 7.6, 5.2]],
@@ -65,7 +66,7 @@ function bodyGeometry() {
 /* Habillage : vitrages, joints, passages de roue, calandre, optiques, ouvrants. Tout est calculé au pixel, sans texture. */
 const GLSL_HEAD = `
 varying vec3 vObj; varying float vU; varying float vV; varying float vR;
-uniform float uLamp;
+uniform float uLamp; uniform float uPanel; uniform float uSide; uniform vec4 uOpen;
 #define FA ${FA.toFixed(2)}
 #define RA ${RA.toFixed(2)}
 #define VSILL ${(I_SILL / (M - 1)).toFixed(4)}
@@ -78,6 +79,22 @@ float sdEll(vec2 p, vec2 c, vec2 r){ return (length((p - c) / r) - 1.) * min(r.x
 float aa(float d){ return clamp(.5 - d / max(fwidth(d), 1e-4), 0., 1.); }
 float ln(float d, float w){ return aa(abs(d) - w); }
 void over(inout LV o, vec3 c, float r, float m, float a){ o.col = mix(o.col, c, a); o.rough = mix(o.rough, r, a); o.metal = mix(o.metal, m, a); }
+/* Ouvrants : 1 capot, 2 coffre, 3 porte avant, 4 porte arrière. */
+float panelId(vec3 p, float u, float v, float wr){
+  float az = abs(p.z);
+  if (v > VRAIL - .06 && az < wr) { if (u > 10.7 && u < 21.3) return 1.; if (u < -14.95 && u > -22.2) return 2.; }
+  if (u <= -22.2 && p.y > 6.3 && az < 6.4) return 2.;
+  if (v > VSILL && v < VRAIL - .02 && p.y > 2.72) {
+    if (u < 8.3 && u > -1.6) return 3.;
+    if (u <= -1.6 && u > -9.3 && length(vec2(u - RA, p.y - 3.15)) > 4.55) return 4.;
+  }
+  return 0.;
+}
+bool panelCut(vec3 p, float u, float v, float wr){
+  float id = panelId(p, u, v, wr);
+  if (uPanel < .5) return id > .5 && (id < 1.5 ? uOpen.x : id < 2.5 ? uOpen.y : id < 3.5 ? uOpen.z : uOpen.w) > .5;
+  return abs(id - uPanel) > .5 || p.z * uSide < 0.;
+}
 LV livery(vec3 p, float u, float v, float wr, vec3 paint, float rough, float metal){
   LV o; o.col = paint; o.rough = rough; o.metal = metal; o.emis = vec3(0.); o.glass = 0.; o.hole = 0.;
   float az = abs(p.z); vec2 f = vec2(az, p.y);
@@ -152,13 +169,13 @@ LV livery(vec3 p, float u, float v, float wr, vec3 paint, float rough, float met
 }`;
 function dress(mat, isGlass) {
   mat.onBeforeCompile = (sh) => {
-    sh.uniforms.uLamp = mat.userData.uLamp;
+    sh.uniforms.uLamp = mat.userData.uLamp; sh.uniforms.uPanel = mat.userData.uPanel; sh.uniforms.uSide = mat.userData.uSide; sh.uniforms.uOpen = mat.userData.uOpen;
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute float aU; attribute float aV; attribute float aR; varying vec3 vObj; varying float vU; varying float vV; varying float vR;')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvObj = position; vU = aU; vV = aV; vR = aR;');
     let f = sh.fragmentShader.replace('#include <common>', '#include <common>\n' + GLSL_HEAD);
     f = isGlass
-      ? f.replace('#include <color_fragment>', '#include <color_fragment>\nLV lv = livery(vObj, vU, vV, vR, diffuseColor.rgb, roughness, metalness); if (lv.glass < .5 || lv.hole > .5) discard;')
-      : f.replace('#include <color_fragment>', '#include <color_fragment>\nLV lv = livery(vObj, vU, vV, vR, diffuseColor.rgb, roughness, metalness); if (lv.glass > .5 || lv.hole > .5) discard; diffuseColor.rgb = lv.col;')
+      ? f.replace('#include <color_fragment>', '#include <color_fragment>\nLV lv = livery(vObj, vU, vV, vR, diffuseColor.rgb, roughness, metalness); if (lv.glass < .5 || lv.hole > .5 || panelCut(vObj, vU, vV, vR)) discard;')
+      : f.replace('#include <color_fragment>', '#include <color_fragment>\nLV lv = livery(vObj, vU, vV, vR, diffuseColor.rgb, roughness, metalness); if (lv.glass > .5 || lv.hole > .5 || panelCut(vObj, vU, vV, vR)) discard; diffuseColor.rgb = lv.col;')
         .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = lv.rough;').replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor = lv.metal;')
         .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += lv.emis;');
     sh.fragmentShader = f;
@@ -198,7 +215,8 @@ export function mount(el) {
     cabin: std(0x23272d, { metalness: 0.05, roughness: 0.85 }), seat: std(0x3a3f47, { metalness: 0, roughness: 0.9 }),
     m112: sysM(), boite: sysM(), freinage: sysM(), suspension: sysM(), direction: sysM(), 'elec-w203': sysM(), clim: sysM()
   };
-  M_.paint.userData.uLamp = M_.glass.userData.uLamp = uLamp;
+  const uPanel = { value: 0 }, uSide = { value: 0 }, uOpen = { value: new THREE.Vector4(0, 0, 0, 0) };
+  [M_.paint, M_.glass].forEach((m) => Object.assign(m.userData, { uLamp, uPanel, uSide, uOpen }));
   const HI = { m112: [M_.m112], boite: [M_.boite], freinage: [M_.freinage, M_.disc], suspension: [M_.suspension], direction: [M_.direction], 'elec-w203': [M_['elec-w203']], clim: [M_.clim], carrosserie: [M_.paint, M_.plain] };
   const car = new THREE.Group(); scene.add(car);
   const put = (geo, mat, part, order) => { const m = new THREE.Mesh(geo, mat); if (part) m.userData.part = part; if (order) m.renderOrder = order; car.add(m); return m; };
@@ -207,12 +225,23 @@ export function mount(el) {
   /* ---- Carrosserie et vitrages : une seule surface, deux matériaux complémentaires ---- */
   const bodyGeo = bodyGeometry();
   const body = put(bodyGeo, M_.paint, 'carrosserie', 4), glass = put(bodyGeo, M_.glass, 'carrosserie', 5);
+  /* Ouvrants : la même surface, redessinée par panneau autour de sa charnière. */
+  const panels = [];
+  const panel = (id, side, hx, hy, hz, axis, angle, key) => {
+    const g = new THREE.Group(); g.position.set(hx, hy, hz); car.add(g);
+    [[M_.paint, 4], [M_.glass, 5]].forEach(([m, order]) => { if (m === M_.glass && id < 3) return; const mesh = new THREE.Mesh(bodyGeo, m); mesh.position.set(-hx, -hy, -hz); mesh.userData.part = 'carrosserie'; mesh.userData.name = key; mesh.renderOrder = order; mesh.frustumCulled = false;
+      mesh.onBeforeRender = () => { uPanel.value = id; uSide.value = side; m.uniformsNeedUpdate = true; }; mesh.onAfterRender = () => { uPanel.value = 0; uSide.value = 0; m.uniformsNeedUpdate = true; }; mesh.visible = false; g.add(mesh); });
+    panels.push({ g, id, axis, angle, t: 0, v: 0, h: [hx, hy, hz] });
+  };
+  panel(1, 0, 10.7, TOP(10.7) - 0.1, 0, 'z', 0.92, 'Capot'); panel(2, 0, -14.95, TOP(-14.95) - 0.1, 0, 'z', -1.15, 'Malle de coffre');
+  [-1, 1].forEach((sd) => { panel(3, sd, 8.3, 0, sd * flank(8.3, 6), 'y', sd * 1.05, 'Porte avant'); panel(4, sd, -1.6, 0, sd * flank(-1.6, 6), 'y', sd * 1.0, 'Porte arrière'); });
+  [body, glass].forEach((mesh) => { const m = mesh.material; mesh.onBeforeRender = () => { uPanel.value = 0; uSide.value = 0; m.uniformsNeedUpdate = true; }; });
   /* Accessoires de carrosserie : rétroviseurs, poignées, lèvres d'aile, étoile, sortie d'échappement. */
   const trimP = [], trimC = [], trimB = [];
   [-1, 1].forEach((s) => {
     trimP.push([new THREE.SphereGeometry(1, 18, 12), at(8.8, 9.9, s * (flank(8.6, 9.6) + 0.8), 0, s * 0.25, 0, 0.36, 0.56, 0.85)]);
     trimB.push([box(0.5, 0.3, 0.7), at(8.9, 9.6, s * (flank(8.6, 9.5) + 0.25))]);
-    [[-0.1, 8.9], [-8.0, 9.05]].forEach(([x, y]) => trimC.push([box(1.25, 0.2, 0.2), at(x, y, s * (flank(x, y) + 0.06))]));
+    [[-0.1, 8.9], [-8.0, 9.05]].forEach(([x, y], i) => { const pn = panels[(s < 0 ? 2 : 4) + i], hd = new THREE.Mesh(box(1.25, 0.2, 0.2), M_.chrome); hd.position.set(x - pn.h[0], y - pn.h[1], s * (flank(x, y) + 0.06) - pn.h[2]); pn.g.add(hd); });
     [FA, RA].forEach((x) => trimP.push([new THREE.TorusGeometry(3.8, 0.055, 6, 40, Math.PI * 1.06), at(x, 3.15, s * (WID(x) - 0.06), 0, 0, -0.09)]));
     [FA, RA].forEach((x) => { const len = WID(x) - 4.9; trimB.push([new THREE.CylinderGeometry(3.82, 3.82, len, 28, 1, true).rotateX(Math.PI / 2), at(x, 3.15, s * (4.75 + len / 2 - 0.12))], [new THREE.CircleGeometry(3.82, 28), at(x, 3.15, s * 4.66)]); });
   });
@@ -232,11 +261,11 @@ export function mount(el) {
   const dashS = new THREE.Shape(); dashS.moveTo(0, 0); dashS.lineTo(2.6, 0); dashS.lineTo(2.9, 4.6); dashS.quadraticCurveTo(1.6, 5.4, 0.2, 4.7); dashS.lineTo(0.5, 2.6); dashS.closePath();
   put(merge([
     [box(25, 0.6, 14.2), at(-2, 2.6, 0)], [new THREE.ExtrudeGeometry(dashS, { depth: 14, bevelEnabled: false }).translate(0, 0, -7), at(7.2, 4.3, 0)],
-    [box(9.4, 2.9, 3.3), at(3.6, 4.2, 0)], [box(3.6, 0.4, 13.4), at(-13.4, 9.85, 0)], [box(0.5, 6.4, 14), at(-11.6, 6.2, 0, 0, 0, 0.35)], [box(0.5, 6.6, 14.4), at(10.4, 5.6, 0)]
+    [box(9.4, 2.9, 3.3), at(3.6, 4.2, 0)], [box(3.6, 0.4, 13.4), at(-13.4, 9.85, 0)], [box(0.5, 6.4, 14), at(-11.6, 6.2, 0, 0, 0, 0.35)], [box(7.4, 0.3, 12.6), at(-18, 4.9, 0)], [box(0.3, 3.6, 12.6), at(-21.6, 6.6, 0)], [box(0.5, 6.6, 14.4), at(10.4, 5.6, 0)]
   ]), M_.cabin, null, 1);
 
   /* ---- Organes : chaque pièce est nommée ; un seul maillage par système ---- */
-  const WP = wheelParts(), wheels = [];
+  const WP = wheelParts(), wheels = [], steerPv = [];
   const helix = (r, h, turns) => { const P = []; for (let i = 0; i <= turns * 12; i++) { const a = i / 12 * 2 * Math.PI; P.push(new THREE.Vector3(r * Math.cos(a), h * i / (turns * 12), r * Math.sin(a))); } return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(P), turns * 16, 0.14, 6); };
   const S = { m112: [], boite: [], freinage: [], suspension: [], direction: [], 'elec-w203': [], clim: [] };
   const C = { alu: 0xc2c9d0, cast: 0x8d959e, steel: 0x6c747d, dark: 0x2a2e34, rubber: 0x17191c, exh: 0x9a8f80, hot: 0x7d6f62, mag: 0x555c65, cu: 0xb58a4c, plastic: 0x3a4048, white: 0xdfe3e6, red: 0xa83a2c, blue: 0x5f86a6, gold: 0xa8935a, yellow: 0xc9a13c };
@@ -288,7 +317,7 @@ export function mount(el) {
 
   /* Roues, freins, trains roulants */
   [[FA, 1], [FA, -1], [RA, 1], [RA, -1]].forEach(([x, s]) => {
-    const front = x > 0, w = new THREE.Group(); w.position.set(x, WR, s * TRACK); w.scale.z = s; car.add(w); wheels.push(w);
+    const front = x > 0, w = new THREE.Group(), pv = new THREE.Group(); pv.position.set(x, WR, s * TRACK); w.scale.z = s; pv.add(w); car.add(pv); wheels.push(w); if (front) steerPv.push(pv);
     w.add(new THREE.Mesh(WP.tire, M_.tire), new THREE.Mesh(WP.rim, M_.alloy), new THREE.Mesh(WP.dark, M_.black));
     const d = new THREE.Mesh(WP.disc, M_.disc); d.userData.part = 'freinage'; d.userData.name = front ? 'Disque de frein avant (ventilé)' : 'Disque de frein arrière'; w.add(d);
     const zc = s * (TRACK - 0.14), ax = x + (front ? -1.2 : 1.2), ay = WR + 0.35, rz = front ? 0.3 : -0.3, nm = front ? 'avant' : 'arrière';
@@ -352,9 +381,14 @@ export function mount(el) {
   const mods = (window.W203 && window.W203.modules) || [], ui = el.querySelector('[data-ui]'), layer = document.createElement('div'); layer.className = 'hot3d'; host.appendChild(layer);
   const dots = SYS.map(([id, label, pos]) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'hot3d-dot'; b.dataset.sys = id; b.setAttribute('aria-label', label); b.innerHTML = `<span>${label}</span>`; layer.appendChild(b); b.addEventListener('click', () => choose(id)); return { id, b, v: new THREE.Vector3(...pos) }; });
   const hint = '<p class="viz-note">Glisse pour tourner la voiture, pince pour zoomer. Touche un système : la carrosserie devient transparente. Touche ensuite une pièce pour connaître son nom.</p>';
-  ui.innerHTML = `<div class="vchips" role="group" aria-label="Systèmes de la voiture">${SYS.map(([id, label]) => `<button class="vbtn sm" type="button" data-sys="${id}" aria-pressed="false">${label}</button>`).join('')}<label class="vtoggle"><input type="checkbox" data-xray><span class="vtrack" aria-hidden="true"></span>Radiographie</label></div><div class="hot3d-card" data-card aria-live="polite">${hint}</div>`;
+  ui.innerHTML = `<div class="vchips" role="group" aria-label="Systèmes de la voiture">${SYS.map(([id, label]) => `<button class="vbtn sm" type="button" data-sys="${id}" aria-pressed="false">${label}</button>`).join('')}<label class="vtoggle"><input type="checkbox" data-xray><span class="vtrack" aria-hidden="true"></span>Radiographie</label></div><div class="vchips"><span class="viz-note">Ouvrir</span>${[['0', 'Capot'], ['d', 'Portes'], ['1', 'Coffre']].map(([k, t]) => `<label class="vtoggle"><input type="checkbox" data-open="${k}"><span class="vtrack" aria-hidden="true"></span>${t}</label>`).join('')}<span class="viz-note" style="margin-left:8px">Teinte</span>${PAINTS.map(([n, c], i) => `<button type="button" class="swatch3d${i ? '' : ' sel'}" data-paint="${i}" style="--c:#${c.toString(16).padStart(6, '0')}" aria-label="${n}" title="${n}"></button>`).join('')}</div><div class="hot3d-card" data-card aria-live="polite">${hint}</div>`;
   ui.querySelectorAll('.vbtn[data-sys]').forEach((b) => b.addEventListener('click', () => choose(b.dataset.sys)));
   const xr = ui.querySelector('[data-xray]');
+  ui.querySelectorAll('[data-open]').forEach((c) => c.addEventListener('change', () => { const k = c.dataset.open, on = c.checked ? 1 : 0; spin = false; if (k === 'd') panels.slice(2).forEach((pn) => { pn.t = on; }); else panels[+k].t = on; if (on) st.view(k === '1' ? 2.5 : 0.85, 0.42); st.refresh(); }));
+  const setPaint = (i) => { const [, c, mt, r] = PAINTS[i] || PAINTS[0]; [M_.paint, M_.plain].forEach((m) => { m.color.setHex(c); m.metalness = mt; m.roughness = r; }); ui.querySelectorAll('[data-paint]').forEach((b) => b.classList.toggle('sel', +b.dataset.paint === i)); try { localStorage.setItem('w203-teinte', String(i)); } catch (e) { /* ignoré */ } st.refresh(); };
+  ui.querySelectorAll('[data-paint]').forEach((b) => b.addEventListener('click', () => setPaint(+b.dataset.paint)));
+  try { const sv = +localStorage.getItem('w203-teinte'); if (sv > 0 && PAINTS[sv]) setPaint(sv); } catch (e) { /* ignoré */ }
+  let steer = 0;
   let sel = null, spin = !reduced(), pulse = 0, xray = 0, xrayT = 0, manual = false;
   xr.addEventListener('change', () => { manual = xr.checked; xrayT = manual || (sel && sel !== 'carrosserie') ? 1 : 0; st.refresh(); });
   function choose(id) {
@@ -373,6 +407,10 @@ export function mount(el) {
     if (spin) { st.orbit.taz += dt * 0.14; st.orbit.az = st.orbit.taz; wheels.forEach((w) => { w.rotation.z -= dt * 1.1 * w.scale.z; }); }
     pulse += real || 0.016;
     xray += (xrayT - xray) * (1 - Math.pow(0.003, real || 0.016)); if (Math.abs(xrayT - xray) < 0.004) xray = xrayT; if (reduced()) xray = xrayT;
+    let moving = false; const kk = 1 - Math.pow(0.004, real || 0.016);
+    panels.forEach((pn) => { pn.v += (pn.t - pn.v) * kk; if (Math.abs(pn.t - pn.v) < 0.003) pn.v = pn.t; else moving = true; if (reduced()) pn.v = pn.t; pn.g.rotation[pn.axis] = pn.angle * pn.v; const open = pn.v > 0.001; pn.g.children.forEach((ch) => { if (ch.onBeforeRender && ch.geometry === bodyGeo) ch.visible = open; }); });
+    uOpen.value.set(panels[0].v > 0.001 ? 1 : 0, panels[1].v > 0.001 ? 1 : 0, panels[2].v > 0.001 ? 1 : 0, panels[3].v > 0.001 ? 1 : 0);
+    const stT = sel === 'direction' && !reduced() ? 0.45 * Math.sin(pulse * 1.3) : 0; steer += (stT - steer) * kk; steerPv.forEach((pv) => { pv.rotation.y = steer; });
     const solid = xray < 0.01;
     if (solid !== wasSolid) { wasSolid = solid; M_.paint.transparent = !solid; M_.paint.depthWrite = solid; M_.paint.needsUpdate = true; [M_.cabin, M_.seat, M_.plain].forEach((m) => { m.transparent = !solid; m.depthWrite = solid; m.needsUpdate = true; }); body.renderOrder = solid ? 0 : 4; }
     M_.paint.opacity = 1 - 0.8 * xray; M_.glass.opacity = 0.42 - 0.3 * xray; M_.plain.opacity = 1 - 0.7 * xray; wells.visible = xray < 0.5; layer.style.opacity = xray.toFixed(2); layer.style.visibility = xray > 0.02 ? 'visible' : 'hidden';
@@ -380,7 +418,7 @@ export function mount(el) {
     Object.keys(HI).forEach((k) => HI[k].forEach((m) => { if (k === sel) m.emissive.copy(accent).multiplyScalar((k === 'carrosserie' ? 0.16 : 0.3) + 0.14 * Math.sin(pulse * 4) * (k === 'carrosserie' ? 0.5 : 1)); else m.emissive.setHex(0); }));
     const w = host.clientWidth, h = host.clientHeight;
     dots.forEach((d) => { d.b.classList.toggle('sel', d.id === sel); p.copy(d.v).project(st.camera); d.b.style.transform = `translate(${((p.x + 1) / 2 * w).toFixed(1)}px,${((1 - p.y) / 2 * h).toFixed(1)}px)`; });
-    return !!sel || xray !== xrayT;
+    return !!sel || xray !== xrayT || moving || Math.abs(steer) > 0.002;
   });
   st.refresh();
   return st;
