@@ -200,7 +200,7 @@ function wheelParts() {
 
 export function mount(el) {
   const host = el.querySelector('[data-stage]'); host.innerHTML = '';
-  const st = createStage(host, { target: [0, 5.6, 0], radius: 78, fov: 24, az: 0.72, el: 0.2, minEl: 0.02, maxEl: 1.4, zoom: [0.5, 1.5], label: 'Maquette 3D de la Mercedes C 240 W203' });
+  const st = createStage(host, { target: [0, 5.6, 0], radius: 78, fov: 24, az: 0.72, el: 0.2, minEl: 0.02, maxEl: 1.4, zoom: [0.4, 1.5], fit: 1.55, label: 'Maquette 3D de la Mercedes C 240 W203' });
   const { scene } = st;
   const accent = new THREE.Color(cssVar('--accent', '#1C5797')).lerp(new THREE.Color(0x4da3ff), 0.35);
   const std = (color, o) => new THREE.MeshStandardMaterial(Object.assign({ color, metalness: 0.7, roughness: 0.4 }, o || {}));

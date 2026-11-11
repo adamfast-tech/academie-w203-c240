@@ -51,7 +51,7 @@ function studioEnv(renderer) {
 
 /* createStage(host, opts) → { scene, camera, renderer, orbit, onFrame, onTap, play, pause, on, view } */
 export function createStage(host, opts) {
-  const o = Object.assign({ fov: 32, target: [0, 0, 0], radius: 100, az: 0.6, el: 0.35, minEl: -0.2, maxEl: 1.45, autoplay: true, zoom: [0.6, 1.6] }, opts || {});
+  const o = Object.assign({ fov: 32, target: [0, 0, 0], radius: 100, az: 0.6, el: 0.35, minEl: -0.2, maxEl: 1.45, autoplay: true, zoom: [0.6, 1.6], fit: 1 }, opts || {});
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
   renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.15;
@@ -64,7 +64,7 @@ export function createStage(host, opts) {
 
   const orbit = { az: o.az, el: o.el, zoom: 1, taz: o.az, tel: o.el, tzoom: 1, target: new THREE.Vector3(...o.target) };
   const place = () => {
-    const r = o.radius * orbit.zoom * (camera.aspect < 1 ? Math.min(1.9, 1 / camera.aspect) : 1), ce = Math.cos(orbit.el);
+    const r = o.radius * orbit.zoom * (camera.aspect < o.fit ? Math.min(2.4, o.fit / camera.aspect) : 1), ce = Math.cos(orbit.el);
     camera.position.set(orbit.target.x + r * ce * Math.sin(orbit.az), orbit.target.y + r * Math.sin(orbit.el), orbit.target.z + r * ce * Math.cos(orbit.az));
     camera.lookAt(orbit.target);
   };
