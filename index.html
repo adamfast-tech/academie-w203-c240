@@ -481,7 +481,7 @@ ol.steps>li:not(:last-child)::after{content:"";position:absolute;left:14px;top:3
 @container (max-width:560px){.stage3d{aspect-ratio:1/1}}
 .hot3d{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .hot3d-dot{position:absolute;left:0;top:0;width:0;height:0;padding:0;border:0;background:none;pointer-events:auto;cursor:pointer;color:var(--ink)}
-.hot3d-dot::before{content:"";position:absolute;left:-7px;top:-7px;width:14px;height:14px;border-radius:50%;background:var(--accent);border:2px solid var(--surface);box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 50%,transparent);animation:hot3d 2.4s ease-out infinite}
+.hot3d-dot::before{content:"";position:absolute;left:-6px;top:-6px;width:12px;height:12px;opacity:.9;border-radius:50%;background:var(--accent);border:2px solid var(--surface);box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 50%,transparent);animation:hot3d 2.4s ease-out infinite}
 .hot3d-dot::after{content:"";position:absolute;left:-18px;top:-18px;width:36px;height:36px}
 .hot3d-dot span{position:absolute;left:12px;top:-11px;white-space:nowrap;font-family:var(--f-mono);font-size:.68rem;letter-spacing:.04em;padding:3px 8px;border-radius:999px;background:color-mix(in srgb,var(--surface) 88%,transparent);border:1px solid var(--line);opacity:.0;transition:opacity .2s}
 .hot3d-dot:hover span,.hot3d-dot:focus-visible span,.hot3d-dot.sel span{opacity:1}
@@ -4145,7 +4145,7 @@ window.Viz = (function () {
   };
 
   V.w2033d = {
-    title: 'Ta C 240 en transparence', lessons: [],
+    title: 'Ta C 240 en 3D', lessons: [],
     html() { return head(this.title, '').replace('Schéma animé', 'Maquette 3D') + '<div class="stage3d" data-stage><p class="viz-note">Chargement de la maquette…</p></div><div class="stack" style="gap:10px" data-ui></div>'; },
     init(el) { el.classList.add('home3d'); stage3d(el, 'w203.js'); }
   };

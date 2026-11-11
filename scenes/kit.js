@@ -6,14 +6,30 @@ const RM = matchMedia('(prefers-reduced-motion: reduce)');
 export const reduced = () => RM.matches;
 export const cssVar = (n, fb) => (getComputedStyle(document.documentElement).getPropertyValue(n).trim() || fb);
 
-/* Environnement de reflets : un « studio » de panneaux lumineux, sans fichier externe. */
+/* Fusionne des géométries (avec leur matrice) en une seule : un seul appel de dessin par matériau. */
+export function merge(list) {
+  const pos = [], nor = [];
+  list.forEach((it) => {
+    const src = Array.isArray(it) ? it[0] : it, mat = Array.isArray(it) ? it[1] : null;
+    const g = src.index ? src.toNonIndexed() : src.clone(); if (mat) g.applyMatrix4(mat);
+    if (!g.attributes.normal) g.computeVertexNormals();
+    pos.push(g.attributes.position.array); nor.push(g.attributes.normal.array); g.dispose(); if (src !== g) src.dispose();
+  });
+  const cat = (arrs) => { const n = arrs.reduce((a, x) => a + x.length, 0), out = new Float32Array(n); let o = 0; arrs.forEach((x) => { out.set(x, o); o += x.length; }); return out; };
+  const out = new THREE.BufferGeometry(); out.setAttribute('position', new THREE.BufferAttribute(cat(pos), 3)); out.setAttribute('normal', new THREE.BufferAttribute(cat(nor), 3)); return out;
+}
+/* Matrice de pose : position, rotation (Euler XYZ), échelle. */
+export function at(x, y, z, rx, ry, rz, sx, sy, sz) { return new THREE.Matrix4().compose(new THREE.Vector3(x || 0, y || 0, z || 0), new THREE.Quaternion().setFromEuler(new THREE.Euler(rx || 0, ry || 0, rz || 0)), new THREE.Vector3(sx == null ? 1 : sx, sy == null ? (sx == null ? 1 : sx) : sy, sz == null ? (sx == null ? 1 : sx) : sz)); }
+
+/* Environnement de reflets : un studio à boîtes à lumière, sans fichier externe. */
 function studioEnv(renderer) {
   const sc = new THREE.Scene();
-  const room = new THREE.Mesh(new THREE.BoxGeometry(40, 40, 40), new THREE.MeshBasicMaterial({ color: 0x59616b, side: THREE.BackSide }));
-  sc.add(room);
-  const panel = (x, y, z, w, h, c) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: c, side: THREE.DoubleSide })); m.position.set(x, y, z); m.lookAt(0, 0, 0); sc.add(m); };
-  panel(0, 19, 0, 26, 26, 0xffffff); panel(-19, 4, 6, 14, 22, 0xdfe8f5); panel(19, 6, -4, 10, 18, 0xfff1dc); panel(0, 2, 19, 22, 8, 0xb9c4d2); panel(0, -19, 0, 30, 30, 0x30363e);
-  const pm = new THREE.PMREMGenerator(renderer); const tex = pm.fromScene(sc, 0.04).texture; pm.dispose();
+  sc.add(new THREE.Mesh(new THREE.BoxGeometry(60, 40, 60), new THREE.MeshBasicMaterial({ color: 0x737b86, side: THREE.BackSide })));
+  const panel = (x, y, z, w, h, c, k) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(k || 1), side: THREE.DoubleSide })); m.position.set(x, y, z); m.lookAt(0, 0, 0); sc.add(m); };
+  panel(0, 19.5, 0, 34, 12, 0xffffff, 3.2); panel(0, 19.5, 16, 40, 5, 0xffffff, 2.2); panel(0, 19.5, -16, 40, 5, 0xffffff, 2.2);
+  panel(-29, 6, 0, 30, 9, 0xe4edf8, 1.6); panel(29, 6, 0, 30, 9, 0xfff3e2, 1.6); panel(0, 5, 29, 30, 8, 0xdfe6ee, 1.2); panel(0, 5, -29, 30, 8, 0xdfe6ee, 1.2);
+  panel(0, -19.5, 0, 60, 60, 0x1c2026, 1);
+  const pm = new THREE.PMREMGenerator(renderer); const tex = pm.fromScene(sc, 0.02).texture; pm.dispose();
   sc.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
   return tex;
 }
@@ -21,9 +37,9 @@ function studioEnv(renderer) {
 /* createStage(host, opts) → { scene, camera, renderer, orbit, onFrame, onTap, play, pause, on, view } */
 export function createStage(host, opts) {
   const o = Object.assign({ fov: 32, target: [0, 0, 0], radius: 100, az: 0.6, el: 0.35, minEl: -0.2, maxEl: 1.45, autoplay: true, zoom: [0.6, 1.6] }, opts || {});
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'low-power' });
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
-  renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+  renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.15;
   const cv = renderer.domElement; cv.className = 'stage3d-canvas'; cv.setAttribute('role', 'img'); if (o.label) cv.setAttribute('aria-label', o.label);
   host.appendChild(cv);
   const scene = new THREE.Scene(); scene.environment = studioEnv(renderer);
