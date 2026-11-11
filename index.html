@@ -498,7 +498,7 @@ ol.steps>li:not(:last-child)::after{content:"";position:absolute;left:14px;top:3
 .hot3d-card .piece{color:var(--ink);min-height:1.4em;margin-top:6px}.hot3d-card>div{flex:1 1 260px}
 .viz.home3d{margin:22px 0 0}.viz.home3d .stage3d{aspect-ratio:21/9;max-height:460px}
 @container (max-width:560px){.viz.home3d .stage3d{aspect-ratio:4/3}}
-.vrange.r3{grid-template-columns:4.2em 1fr 5.6em}.vrange.r3 span{min-width:0}
+.vrange.r3{grid-template-columns:4.2em 1fr 7.6em}.vrange.r3 span{min-width:0}
 .vbtn.sm{min-height:36px;padding:5px 12px;font-size:.8rem}
 .vbtn.sel{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .lg3d{display:inline-flex;align-items:center;gap:6px;font-size:.78rem;color:var(--muted);margin-right:8px}
@@ -2413,6 +2413,7 @@ W.mod({ id: 'boite', num: 10, code: 'M10', level: 3, title: 'Boîte & transmissi
   { id: 'b7226', title: 'La boîte 722.6 expliquée', min: 12,
     lead: 'Une boîte robuste, à condition de connaître ses deux faiblesses électriques.',
     body: `
+<div data-viz="boite3d"></div>
 <h2>Architecture</h2>
 ${table(['Élément', 'Rôle'], [
   ['Convertisseur de couple avec embrayage de pontage', 'Liaison hydraulique moteur-boîte, verrouillable à vitesse stable'],
@@ -4150,6 +4151,11 @@ window.Viz = (function () {
     init(el) { stage3d(el, 'm112.js'); }
   };
 
+  V.boite3d = {
+    title: 'La boîte 722.6 en 3D', lessons: ['b7226', 'conducteur'],
+    html() { return head(this.title, playBtn).replace('Schéma animé', 'Maquette 3D') + '<div class="stage3d" data-stage><p class="viz-note">Chargement de la maquette…</p></div><div class="stack" style="gap:10px" data-ui></div>'; },
+    init(el) { stage3d(el, 'boite.js'); }
+  };
   V.frein3d = {
     title: 'Le frein à disque en 3D', lessons: ['freins-av', 'freins-w203'],
     html() { return head(this.title, playBtn).replace('Schéma animé', 'Maquette 3D') + '<div class="stage3d" data-stage><p class="viz-note">Chargement de la maquette…</p></div><div class="stack" style="gap:10px" data-ui></div>'; },
