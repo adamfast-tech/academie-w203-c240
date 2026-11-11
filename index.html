@@ -2847,6 +2847,7 @@ W.mod({ id: 'suspension', num: 13, code: 'M13', level: 2, title: 'Suspension & t
   { id: 'train-av', title: 'Le train avant W203', min: 11,
     lead: 'Un train « trois bras » avec jambe McPherson.',
     body: `
+<div data-viz="train3d"></div>
 ${fig(D.frontAxle, 'Schéma de principe vu de dessus, roue avant gauche. Les positions exactes diffèrent sur la voiture.')}
 ${table(['Pièce', 'Rôle', 'Usure typique'], [
   ['Bras transversal inférieur', 'Guide la roue latéralement', 'Rotule, silentbloc'],
@@ -4151,6 +4152,11 @@ window.Viz = (function () {
     init(el) { stage3d(el, 'm112.js'); }
   };
 
+  V.train3d = {
+    title: 'Le train avant en 3D', lessons: ['train-av', 'bruits-train'],
+    html() { return head(this.title, playBtn).replace('Schéma animé', 'Maquette 3D') + '<div class="stage3d" data-stage><p class="viz-note">Chargement de la maquette…</p></div><div class="stack" style="gap:10px" data-ui></div>'; },
+    init(el) { stage3d(el, 'train.js'); }
+  };
   V.boite3d = {
     title: 'La boîte 722.6 en 3D', lessons: ['b7226', 'conducteur'],
     html() { return head(this.title, playBtn).replace('Schéma animé', 'Maquette 3D') + '<div class="stage3d" data-stage><p class="viz-note">Chargement de la maquette…</p></div><div class="stack" style="gap:10px" data-ui></div>'; },
