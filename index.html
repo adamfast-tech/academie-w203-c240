@@ -15,10 +15,16 @@
 <title>Académie W203</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="description" content="Cursus complet pour entretenir, diagnostiquer et réparer soi-même une Mercedes C 240 W203 (203.061) à moteur M112.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<link rel="preload" href="fonts/ibm-plex-sans-400-600.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/barlow-condensed-600.woff2" as="font" type="font/woff2" crossorigin>
 <style>
+@font-face{font-family:'Barlow Condensed';font-style:normal;font-weight:500;font-display:swap;src:url(fonts/barlow-condensed-500.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Barlow Condensed';font-style:normal;font-weight:600;font-display:swap;src:url(fonts/barlow-condensed-600.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Barlow Condensed';font-style:normal;font-weight:700;font-display:swap;src:url(fonts/barlow-condensed-700.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'IBM Plex Mono';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/ibm-plex-mono-400.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'IBM Plex Mono';font-style:normal;font-weight:500;font-display:swap;src:url(fonts/ibm-plex-mono-500.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'IBM Plex Sans';font-style:italic;font-weight:400;font-display:swap;src:url(fonts/ibm-plex-sans-400i.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'IBM Plex Sans';font-style:normal;font-weight:400 600;font-display:swap;src:url(fonts/ibm-plex-sans-400-600.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 body{margin:0}
 [hidden]{display:none!important}
@@ -778,7 +784,6 @@ ol.steps>li:not(:last-child)::after{content:"";position:absolute;left:14px;top:3
   </div>
   <div class="search-results"><div class="inner" id="sr"></div></div>
 </div>
-<script src="vendor/supabase-2.117.0.min.js"></script>
 <script>window.ACADEMIE_SUPABASE={"url": "https://cfcygkmrpxcjideljxxo.supabase.co", "key": "sb_publishable_i68zVFGjYsUyKef3b3p4Zw_x_COmUOS"};</script>
 <script>
 window.W203 = { modules: [], ref: {}, trees: [], garage: {} };
@@ -7960,10 +7965,14 @@ function authErr(e) {
   return m || 'Une erreur est survenue.';
 }
 const Cloud = { sb: null, user: null, profile: null, on: false, ready: false, timer: null, writing: false, again: false, lastSync: 0, offline: false,
-  available() { return !!(CFG && CFG.url && CFG.key && window.supabase && window.supabase.createClient); },
+  lib: null, failed: false,
+  /* La bibliothèque Supabase (218 Ko) est chargée après le premier affichage, pas avant. */
+  load() { return this.lib || (this.lib = new Promise((res) => { if (window.supabase && window.supabase.createClient) { res(true); return; } const s = document.createElement('script'); s.src = 'vendor/supabase-2.117.0.min.js'; s.onload = () => res(!!(window.supabase && window.supabase.createClient)); s.onerror = () => res(false); document.head.appendChild(s); })); },
+  available() { return !!(CFG && CFG.url && CFG.key && !this.failed); },
   name() { return (this.profile && this.profile.username) || (this.user && ((this.user.user_metadata || {}).username || this.user.email)) || ''; },
   async init() {
     if (!this.available()) { this.ready = true; return; }
+    if (!(await this.load())) { this.failed = true; this.ready = true; chrome(); if (curHash() === 'compte') rerender(); return; }
     try {
       this.sb = window.supabase.createClient(CFG.url, CFG.key, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: 'academie-auth' } });
       this.sb.auth.onAuthStateChange((ev, session) => {

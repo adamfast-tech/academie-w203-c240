@@ -13,7 +13,7 @@ Cursus complet pour entretenir, diagnostiquer et réparer soi-même une **Merced
 - Mon garage : dossiers en cours, carnet d'entretien, échéances calculées selon le kilométrage, avec jauge d'usure
 - 119 schémas interactifs, au moins un par leçon, dont cinq maquettes 3D (train avant avec débattement, braquage et usures simulées ; boîte 722.6 en coupe avec convertisseur, pontage, fuite du connecteur 13 broches et train épicycloïdal à manipuler ; frein à disque avec usure, coupe et démontage pas à pas ; V6 M112 en fonctionnement, pas à pas possible ; berline complète sur l’accueil avec radiographie, ouvrants, teintes et environ 120 organes nommés au toucher ; three.js, chargé à la demande) : animations, simulateurs (circuit électrique, freinage, refroidissement, oscilloscope, données enregistrées…), cartes à explorer avec défi, procédures pas à pas, quiz de tri, remises en ordre, check-lists synchronisées
 - Cartes mémoire du vocabulaire (répétition espacée, glisser à droite ou à gauche), carte du parcours, sommaire de leçon
-- Fonctionne hors ligne une fois ouvert
+- Fonctionne hors ligne une fois ouvert : polices, maquettes 3D et bibliothèques sont servies par le site lui-même, sans appel à un service tiers au chargement
 
 Sans compte, la progression et le carnet restent dans le navigateur de l'appareil. Avec un compte (le même que sur les autres académies : e-mail ou nom d'utilisateur + mot de passe), tout est synchronisé entre appareils via Supabase : leçons, quiz, voiture, dossiers, carnet, échéances et outillage. Chaque utilisateur ne peut lire et modifier que sa propre ligne (RLS). Schéma : `supabase/w203_progress.sql`.
 
