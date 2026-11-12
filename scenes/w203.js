@@ -122,7 +122,7 @@ LV livery(vec3 p, float u, float v, float wr, vec3 paint, float rough, float met
   }
   if (v > VRAIL - .05) {
     if (u > 10.7 && u < 21.3) L = max(L, ln(az - wr, W));
-    if (u < -14.95 && u > -22.3) L = max(L, ln(az - wr, W));
+    if (u < -14.95 && u > -21.2) L = max(L, ln(az - wr, W));
   }
   if (v > VRAIL && az < wr) { L = max(L, ln(u - 21.3, W)); L = max(L, ln(u + 14.95, W)); }
   if (u < -22.2) L = max(L, ln(p.y - 6.3, W) * step(az, 6.4));
@@ -163,7 +163,7 @@ LV livery(vec3 p, float u, float v, float wr, vec3 paint, float rough, float met
     over(o, vec3(.92), .1, 0., aa(sdBox(f, vec2(4.95, 8.3), vec2(.5, .28), .12)));
   }
   if (u < -22.2) {
-    float pl = sdBox(f, vec2(0., 7.35), vec2(2.6, .55), .06); over(o, vec3(.02), .5, 0., aa(pl - .25)); over(o, vec3(.93), .5, 0., aa(pl));
+    float pl = sdBox(f, vec2(0., 7.35), vec2(2.6, .55), .06); over(o, vec3(.02), .5, 0., aa(pl - .07)); over(o, vec3(.93), .5, 0., aa(pl));
     over(o, chrome, .1, 1., aa(sdBox(f, vec2(0., 8.25), vec2(3.4, .1), .1)));
     over(o, vec3(.02), .6, 0., aa(sdBox(f, vec2(0., 4.2), vec2(5.6, .28), .2)));
   }
@@ -207,19 +207,19 @@ export function mount(el) {
   const accent = new THREE.Color(cssVar('--accent', '#1C5797')).lerp(new THREE.Color(0x4da3ff), 0.35);
   const std = (color, o) => new THREE.MeshStandardMaterial(Object.assign({ color, metalness: 0.7, roughness: 0.4 }, o || {}));
   const sysM = () => new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, metalness: 0.55, roughness: 0.45 });
-  const uLamp = { value: 0.9 };
+  const uLamp = { value: 0.9 }, uOpen = { value: new THREE.Vector4(0, 0, 0, 0) }, paints = [], glasses = [];
+  /* Chaque ouvrant a son propre matériau (donc ses propres réglages de panneau et de côté) ; le programme GPU reste partagé. */
+  const mkPaint = (id, side) => { const m = dress(new THREE.MeshPhysicalMaterial({ color: 0xd3d8de, metalness: 0.62, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.05, side: THREE.DoubleSide }), false); m.userData = { uLamp, uOpen, uPanel: { value: id }, uSide: { value: side } }; paints.push(m); return m; };
+  const mkGlass = (id, side) => { const m = dress(new THREE.MeshPhysicalMaterial({ color: 0x1a2a30, metalness: 0, roughness: 0.03, transparent: true, opacity: 0.42, depthWrite: false, side: THREE.DoubleSide, envMapIntensity: 1.6 }), true); m.userData = { uLamp, uOpen, uPanel: { value: id }, uSide: { value: side } }; glasses.push(m); return m; };
   const M_ = {
-    paint: dress(new THREE.MeshPhysicalMaterial({ color: 0xd3d8de, metalness: 0.62, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.05, side: THREE.DoubleSide }), false),
-    glass: dress(new THREE.MeshPhysicalMaterial({ color: 0x1a2a30, metalness: 0, roughness: 0.03, transparent: true, opacity: 0.42, depthWrite: false, side: THREE.DoubleSide, envMapIntensity: 1.6 }), true),
+    paint: mkPaint(0, 0), glass: mkGlass(0, 0),
     plain: new THREE.MeshPhysicalMaterial({ color: 0xd3d8de, metalness: 0.62, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.05 }),
     black: std(0x0b0c0e, { metalness: 0.1, roughness: 0.75 }), chrome: std(0xe2e6ea, { metalness: 1, roughness: 0.08 }),
     tire: std(0x111315, { metalness: 0, roughness: 0.9 }), alloy: std(0xcfd5db, { metalness: 0.95, roughness: 0.22 }), disc: std(0x9aa1a9, { metalness: 0.9, roughness: 0.38 }),
     cabin: std(0x23272d, { metalness: 0.05, roughness: 0.85 }), seat: std(0x3a3f47, { metalness: 0, roughness: 0.9 }),
     m112: sysM(), boite: sysM(), freinage: sysM(), suspension: sysM(), direction: sysM(), 'elec-w203': sysM(), clim: sysM()
   };
-  const uPanel = { value: 0 }, uSide = { value: 0 }, uOpen = { value: new THREE.Vector4(0, 0, 0, 0) };
-  [M_.paint, M_.glass].forEach((m) => Object.assign(m.userData, { uLamp, uPanel, uSide, uOpen }));
-  const HI = { m112: [M_.m112], boite: [M_.boite], freinage: [M_.freinage, M_.disc], suspension: [M_.suspension], direction: [M_.direction], 'elec-w203': [M_['elec-w203']], clim: [M_.clim], carrosserie: [M_.paint, M_.plain] };
+  const HI = { m112: [M_.m112], boite: [M_.boite], freinage: [M_.freinage, M_.disc], suspension: [M_.suspension], direction: [M_.direction], 'elec-w203': [M_['elec-w203']], clim: [M_.clim], carrosserie: paints.concat([M_.plain]) };
   const car = new THREE.Group(); scene.add(car);
   const put = (geo, mat, part, order) => { const m = new THREE.Mesh(geo, mat); if (part) m.userData.part = part; if (order) m.renderOrder = order; car.add(m); return m; };
   const box = (w, h, d) => new THREE.BoxGeometry(w, h, d), cz = (r, len, seg, r2) => new THREE.CylinderGeometry(r2 == null ? r : r2, r, len, seg || 20).rotateX(Math.PI / 2), cx = (r, len, seg, r2) => new THREE.CylinderGeometry(r2 == null ? r : r2, r, len, seg || 20).rotateZ(Math.PI / 2), cy = (r, len, seg) => new THREE.CylinderGeometry(r, r, len, seg || 12);
@@ -231,13 +231,11 @@ export function mount(el) {
   const panels = [];
   const panel = (id, side, hx, hy, hz, axis, angle, key) => {
     const g = new THREE.Group(); g.position.set(hx, hy, hz); car.add(g);
-    [[M_.paint, 4], [M_.glass, 5]].forEach(([m, order]) => { if (m === M_.glass && id < 3) return; const mesh = new THREE.Mesh(bodyGeo, m); mesh.position.set(-hx, -hy, -hz); mesh.userData.part = 'carrosserie'; mesh.userData.name = key; mesh.renderOrder = order; mesh.frustumCulled = false;
-      mesh.onBeforeRender = () => { uPanel.value = id; uSide.value = side; m.uniformsNeedUpdate = true; }; mesh.onAfterRender = () => { uPanel.value = 0; uSide.value = 0; m.uniformsNeedUpdate = true; }; mesh.visible = false; g.add(mesh); });
+    [[mkPaint(id, side), 4], [id >= 3 ? mkGlass(id, side) : null, 5]].forEach(([m, order]) => { if (!m) return; const mesh = new THREE.Mesh(bodyGeo, m); mesh.position.set(-hx, -hy, -hz); mesh.userData.part = 'carrosserie'; mesh.userData.name = key; mesh.userData.paint = order === 4; mesh.renderOrder = order; mesh.frustumCulled = false; mesh.visible = false; g.add(mesh); });
     panels.push({ g, id, axis, angle, t: 0, v: 0, h: [hx, hy, hz] });
   };
   panel(1, 0, 10.7, TOP(10.7) - 0.1, 0, 'z', 0.92, 'Capot'); panel(2, 0, -14.95, TOP(-14.95) - 0.1, 0, 'z', -1.15, 'Malle de coffre');
   [-1, 1].forEach((sd) => { panel(3, sd, 8.3, 0, sd * flank(8.3, 6), 'y', sd * 1.05, 'Porte avant'); panel(4, sd, -1.6, 0, sd * flank(-1.6, 6), 'y', sd * 1.0, 'Porte arrière'); });
-  [body, glass].forEach((mesh) => { const m = mesh.material; mesh.onBeforeRender = () => { uPanel.value = 0; uSide.value = 0; m.uniformsNeedUpdate = true; }; });
   /* Accessoires de carrosserie : rétroviseurs, poignées, lèvres d'aile, étoile, sortie d'échappement. */
   const trimP = [], trimC = [], trimB = [];
   [-1, 1].forEach((s) => {
@@ -387,8 +385,8 @@ export function mount(el) {
   ui.innerHTML = `<div class="vchips" role="group" aria-label="Systèmes de la voiture">${SYS.map(([id, label]) => `<button class="vbtn sm" type="button" data-sys="${id}" aria-pressed="false">${label}</button>`).join('')}<label class="vtoggle"><input type="checkbox" data-xray><span class="vtrack" aria-hidden="true"></span>Radiographie</label></div><div class="vchips"><span class="viz-note">Ouvrir</span>${[['0', 'Capot'], ['d', 'Portes'], ['1', 'Coffre']].map(([k, t]) => `<label class="vtoggle"><input type="checkbox" data-open="${k}"><span class="vtrack" aria-hidden="true"></span>${t}</label>`).join('')}<span class="viz-note" style="margin-left:8px">Teinte</span>${PAINTS.map(([n, c], i) => `<button type="button" class="swatch3d${i ? '' : ' sel'}" data-paint="${i}" style="--c:#${c.toString(16).padStart(6, '0')}" aria-label="${n}" title="${n}"></button>`).join('')}</div><div class="hot3d-card" data-card aria-live="polite">${hint}</div>${more}`;
   ui.querySelectorAll('.vbtn[data-sys]').forEach((b) => b.addEventListener('click', () => choose(b.dataset.sys)));
   const xr = ui.querySelector('[data-xray]');
-  ui.querySelectorAll('[data-open]').forEach((c) => c.addEventListener('change', () => { const k = c.dataset.open, on = c.checked ? 1 : 0; spin = false; if (k === 'd') panels.slice(2).forEach((pn) => { pn.t = on; }); else panels[+k].t = on; if (on) st.view(k === '1' ? 2.5 : 0.85, 0.42); st.refresh(); }));
-  const setPaint = (i) => { const [, c, mt, r] = PAINTS[i] || PAINTS[0]; [M_.paint, M_.plain].forEach((m) => { m.color.setHex(c); m.metalness = mt; m.roughness = r; }); ui.querySelectorAll('[data-paint]').forEach((b) => b.classList.toggle('sel', +b.dataset.paint === i)); try { localStorage.setItem('w203-teinte', String(i)); } catch (e) { /* ignoré */ } st.refresh(); };
+  ui.querySelectorAll('[data-open]').forEach((c) => c.addEventListener('change', () => { const k = c.dataset.open, on = c.checked ? 1 : 0; spin = false; if (k === 'd') panels.slice(2).forEach((pn) => { pn.t = on; }); else panels[+k].t = on; if (on) st.view(k === '1' ? 2.5 : 0.85, 0.42); st.orbit.tzoom = panels.some((pn) => pn.t) ? 1.32 : 1; st.refresh(); }));
+  const setPaint = (i) => { const [, c, mt, r] = PAINTS[i] || PAINTS[0]; paints.concat([M_.plain]).forEach((m) => { m.color.setHex(c); m.metalness = mt; m.roughness = r; }); ui.querySelectorAll('[data-paint]').forEach((b) => b.classList.toggle('sel', +b.dataset.paint === i)); try { localStorage.setItem('w203-teinte', String(i)); } catch (e) { /* ignoré */ } st.refresh(); };
   ui.querySelectorAll('[data-paint]').forEach((b) => b.addEventListener('click', () => setPaint(+b.dataset.paint)));
   try { const sv = +localStorage.getItem('w203-teinte'); if (sv > 0 && PAINTS[sv]) setPaint(sv); } catch (e) { /* ignoré */ }
   let steer = 0;
@@ -411,12 +409,12 @@ export function mount(el) {
     pulse += real || 0.016;
     xray += (xrayT - xray) * (1 - Math.pow(0.003, real || 0.016)); if (Math.abs(xrayT - xray) < 0.004) xray = xrayT; if (reduced()) xray = xrayT;
     let moving = false; const kk = 1 - Math.pow(0.004, real || 0.016);
-    panels.forEach((pn) => { pn.v += (pn.t - pn.v) * kk; if (Math.abs(pn.t - pn.v) < 0.003) pn.v = pn.t; else moving = true; if (reduced()) pn.v = pn.t; pn.g.rotation[pn.axis] = pn.angle * pn.v; const open = pn.v > 0.001; pn.g.children.forEach((ch) => { if (ch.onBeforeRender && ch.geometry === bodyGeo) ch.visible = open; }); });
+    panels.forEach((pn) => { pn.v += (pn.t - pn.v) * kk; if (Math.abs(pn.t - pn.v) < 0.003) pn.v = pn.t; else moving = true; if (reduced()) pn.v = pn.t; pn.g.rotation[pn.axis] = pn.angle * pn.v; const open = pn.v > 0.001; pn.g.children.forEach((ch) => { if (ch.geometry === bodyGeo) { ch.visible = open; if (ch.userData.paint) ch.renderOrder = xray < 0.01 ? 0 : 4; } }); });
     uOpen.value.set(panels[0].v > 0.001 ? 1 : 0, panels[1].v > 0.001 ? 1 : 0, panels[2].v > 0.001 ? 1 : 0, panels[3].v > 0.001 ? 1 : 0);
     const stT = sel === 'direction' && !reduced() ? 0.45 * Math.sin(pulse * 1.3) : 0; steer += (stT - steer) * kk; steerPv.forEach((pv) => { pv.rotation.y = steer; });
     const solid = xray < 0.01;
-    if (solid !== wasSolid) { wasSolid = solid; M_.paint.transparent = !solid; M_.paint.depthWrite = solid; M_.paint.needsUpdate = true; [M_.cabin, M_.seat, M_.plain].forEach((m) => { m.transparent = !solid; m.depthWrite = solid; m.needsUpdate = true; }); body.renderOrder = solid ? 0 : 4; }
-    M_.paint.opacity = 1 - 0.8 * xray; M_.glass.opacity = 0.42 - 0.3 * xray; M_.plain.opacity = 1 - 0.7 * xray; wells.visible = xray < 0.5; layer.style.opacity = xray.toFixed(2); layer.style.visibility = xray > 0.02 ? 'visible' : 'hidden';
+    if (solid !== wasSolid) { wasSolid = solid; paints.forEach((m) => { m.transparent = !solid; m.depthWrite = solid; m.needsUpdate = true; }); [M_.cabin, M_.seat, M_.plain].forEach((m) => { m.transparent = !solid; m.depthWrite = solid; m.needsUpdate = true; }); body.renderOrder = solid ? 0 : 4; }
+    paints.forEach((m) => { m.opacity = 1 - 0.8 * xray; }); glasses.forEach((m) => { m.opacity = 0.42 - 0.3 * xray; }); M_.plain.opacity = 1 - 0.7 * xray; wells.visible = xray < 0.5; layer.style.opacity = xray.toFixed(2); layer.style.visibility = xray > 0.02 ? 'visible' : 'hidden';
     M_.cabin.opacity = M_.seat.opacity = 1 - 0.9 * xray;
     Object.keys(HI).forEach((k) => HI[k].forEach((m) => { if (k === sel) m.emissive.copy(accent).multiplyScalar((k === 'carrosserie' ? 0.16 : 0.3) + 0.14 * Math.sin(pulse * 4) * (k === 'carrosserie' ? 0.5 : 1)); else m.emissive.setHex(0); }));
     const w = host.clientWidth, h = host.clientHeight;
