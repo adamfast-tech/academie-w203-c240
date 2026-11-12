@@ -41,13 +41,24 @@ export function mount(el) {
   const put = (geo, mat, part, order) => { const m = new THREE.Mesh(geo, mat); if (part) m.userData.part = part; if (order) m.renderOrder = order; car.add(m); return m; };
   const box = (w, h, d) => new THREE.BoxGeometry(w, h, d), cz = (r, len, seg, r2) => new THREE.CylinderGeometry(r2 == null ? r : r2, r, len, seg || 20).rotateX(Math.PI / 2), cx = (r, len, seg, r2) => new THREE.CylinderGeometry(r2 == null ? r : r2, r, len, seg || 20).rotateZ(Math.PI / 2), cy = (r, len, seg) => new THREE.CylinderGeometry(r, r, len, seg || 12);
 
+  /* Habillage du coffre (absent du modèle) : visible malle ouverte. */
+  const liner = [std(0x1d2024, { metalness: 0, roughness: 0.95, side: THREE.DoubleSide }), 'Garniture de coffre', 1, 0.06]; skins.push(liner);
+  const trunk = put(merge([[box(7.8, 0.3, 9.6), at(-17.4, 4.7, 0)], [box(0.3, 3.4, 9.6), at(-13.5, 6.4, 0)], [box(0.3, 1.9, 9.6), at(-21.3, 5.6, 0)], [box(7.8, 3.2, 0.3), at(-17.4, 6.3, 4.8)], [box(7.8, 3.2, 0.3), at(-17.4, 6.3, -4.8)]]), liner[0], 'carrosserie', 3); trunk.userData.name = liner[1]; trunk.userData.skin = true;
+
   /* ---- Carrosserie : modèle allégé, chargé après les organes ---- */
   const wait = document.createElement('p'); wait.className = 'viz-note load3d'; wait.textContent = 'Chargement de la carrosserie…'; host.appendChild(wait);
-  let bodyReady = false;
+  let bodyReady = false; const panels = [];
   new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).load(new URL('../models/w203.glb', import.meta.url).href, (g) => {
     const body = new THREE.Group(); body.scale.setScalar(M_SCALE); body.position.x = M_DX; body.add(g.scene);
     g.scene.traverse((o) => { if (!o.isMesh) return; const sk = SKIN[o.material.name] || (o.material.name === 'Material__3' ? plate : dark); o.material.dispose(); o.material = sk[0]; o.userData.part = 'carrosserie'; o.userData.name = sk[1]; o.userData.skin = true; o.renderOrder = sk[2] < 1 ? 6 : 4; });
-    car.add(body); bodyReady = true; wait.remove(); wasSolid = null; st.refresh();
+    car.add(body); body.updateMatrixWorld(true);
+    /* Ouvrants : nœuds séparés dans le modèle, chacun avec sa charnière. */
+    const LABEL = { panel_door_fl: 'Porte avant gauche', panel_door_fr: 'Porte avant droite', panel_door_rl: 'Porte arrière gauche', panel_door_rr: 'Porte arrière droite', panel_boot: 'Malle de coffre' };
+    const found = []; g.scene.traverse((o) => { if (o.userData && o.userData.panel) found.push(o); });
+    found.forEach((n) => { const u = n.userData, pv = new THREE.Group(); pv.position.fromArray(u.hinge); n.parent.add(pv); pv.updateMatrixWorld(true); pv.attach(n);
+      n.traverse((o) => { if (o.isMesh && o.material === M_.paint) o.userData.name = LABEL[u.panel]; });
+      panels.push({ pv, key: u.axis === 'x' ? 'boot' : 'doors', axis: u.axis, angle: u.axis === 'x' ? 1.25 : (u.side || 1) * (u.front ? 1.08 : 1.0), t: 0, v: 0 }); });
+    bodyReady = true; wait.remove(); wasSolid = null; st.refresh();
   }, undefined, () => { wait.textContent = 'Carrosserie indisponible hors ligne : les organes restent consultables.'; xrayT = 1; manual = true; st.refresh(); });
 
   /* ---- Organes : chaque pièce est nommée ; un seul maillage par système ---- */
@@ -167,9 +178,10 @@ export function mount(el) {
   const more = '<div class="vchips"><span class="viz-note">Maquettes détaillées</span>' + Object.keys(MAQ).flatMap((k) => MAQ[k]).map(([t, l]) => `<a class="vchip" href="#l-${l}">${t.replace(' en 3D', '')}</a>`).join('') + '<a class="vchip" href="#ref-schemas">Toutes</a></div>';
   const hint = '<p class="viz-note">Glisse pour tourner la voiture, pince pour zoomer. Touche un système : la carrosserie devient transparente. Touche ensuite une pièce pour connaître son nom.</p>';
   const credit = '<p class="viz-note">Carrosserie : « 2000 Mercedes C-class W203 » par <a href="https://sketchfab.com/Resinnnn" target="_blank" rel="noopener">RES1N</a>, licence <a href="http://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>, compressée et rematérialisée. Organes : maquette de principe de l’Académie.</p>';
-  ui.innerHTML = `<div class="vchips" role="group" aria-label="Systèmes de la voiture">${SYS.map(([id, label]) => `<button class="vbtn sm" type="button" data-sys="${id}" aria-pressed="false">${label}</button>`).join('')}<label class="vtoggle"><input type="checkbox" data-xray><span class="vtrack" aria-hidden="true"></span>Radiographie</label></div><div class="vchips"><span class="viz-note">Teinte</span>${PAINTS.map(([n, c], i) => `<button type="button" class="swatch3d${i ? '' : ' sel'}" data-paint="${i}" style="--c:#${c.toString(16).padStart(6, '0')}" aria-label="${n}" title="${n}"></button>`).join('')}</div><div class="hot3d-card" data-card aria-live="polite">${hint}</div>${more}${credit}`;
+  ui.innerHTML = `<div class="vchips" role="group" aria-label="Systèmes de la voiture">${SYS.map(([id, label]) => `<button class="vbtn sm" type="button" data-sys="${id}" aria-pressed="false">${label}</button>`).join('')}<label class="vtoggle"><input type="checkbox" data-xray><span class="vtrack" aria-hidden="true"></span>Radiographie</label></div><div class="vchips"><span class="viz-note">Ouvrir</span>${[['doors', 'Portes'], ['boot', 'Coffre']].map(([k, t]) => `<label class="vtoggle"><input type="checkbox" data-open="${k}"><span class="vtrack" aria-hidden="true"></span>${t}</label>`).join('')}<span class="viz-note" style="margin-left:8px">Teinte</span>${PAINTS.map(([n, c], i) => `<button type="button" class="swatch3d${i ? '' : ' sel'}" data-paint="${i}" style="--c:#${c.toString(16).padStart(6, '0')}" aria-label="${n}" title="${n}"></button>`).join('')}</div><div class="hot3d-card" data-card aria-live="polite">${hint}</div>${more}${credit}`;
   ui.querySelectorAll('.vbtn[data-sys]').forEach((b) => b.addEventListener('click', () => choose(b.dataset.sys)));
   const xr = ui.querySelector('[data-xray]');
+  ui.querySelectorAll('[data-open]').forEach((c) => c.addEventListener('change', () => { const on = c.checked ? 1 : 0; spin = false; panels.forEach((pn) => { if (pn.key === c.dataset.open) pn.t = on; }); if (on) st.view(c.dataset.open === 'boot' ? 2.5 : 0.85, 0.42); st.orbit.tzoom = panels.some((pn) => pn.t) ? 1.32 : 1; st.refresh(); }));
   const setPaint = (i) => { const [, c, mt, r] = PAINTS[i] || PAINTS[0]; M_.paint.color.setHex(c); M_.paint.metalness = mt; M_.paint.roughness = r; ui.querySelectorAll('[data-paint]').forEach((b) => b.classList.toggle('sel', +b.dataset.paint === i)); try { localStorage.setItem('w203-teinte', String(i)); } catch (e) { /* ignoré */ } st.refresh(); };
   ui.querySelectorAll('[data-paint]').forEach((b) => b.addEventListener('click', () => setPaint(+b.dataset.paint)));
   try { const sv = +localStorage.getItem('w203-teinte'); if (sv > 0 && PAINTS[sv]) setPaint(sv); } catch (e) { /* ignoré */ }
@@ -191,6 +203,8 @@ export function mount(el) {
     if (spin) { st.orbit.taz += dt * 0.14; st.orbit.az = st.orbit.taz; }
     pulse += real || 0.016;
     xray += (xrayT - xray) * (1 - Math.pow(0.003, real || 0.016)); if (Math.abs(xrayT - xray) < 0.004) xray = xrayT; if (reduced()) xray = xrayT;
+    let moving = false; const kk = 1 - Math.pow(0.004, real || 0.016);
+    panels.forEach((pn) => { pn.v += (pn.t - pn.v) * kk; if (Math.abs(pn.t - pn.v) < 0.003) pn.v = pn.t; else moving = true; if (reduced()) pn.v = pn.t; pn.pv.rotation[pn.axis] = pn.angle * pn.v; });
     const solid = xray < 0.01;
     if (solid !== wasSolid) { wasSolid = solid; skins.forEach(([m, , op, xo]) => { if (xo >= 1) return; const tr = !solid || op < 1; m.transparent = tr; m.depthWrite = !tr; m.needsUpdate = true; }); }
     skins.forEach(([m, , op, xo]) => { m.opacity = op + (xo - op) * xray; });
@@ -199,7 +213,7 @@ export function mount(el) {
     Object.keys(HI).forEach((k) => HI[k].forEach((m) => { if (k === sel) m.emissive.copy(accent).multiplyScalar((k === 'carrosserie' ? 0.16 : 0.3) + 0.14 * Math.sin(pulse * 4) * (k === 'carrosserie' ? 0.5 : 1)); else m.emissive.setHex(0); }));
     const w = host.clientWidth, h = host.clientHeight;
     dots.forEach((d) => { d.b.classList.toggle('sel', d.id === sel); p.copy(d.v).project(st.camera); d.b.style.transform = `translate(${((p.x + 1) / 2 * w).toFixed(1)}px,${((1 - p.y) / 2 * h).toFixed(1)}px)`; });
-    return !!sel || xray !== xrayT;
+    return !!sel || xray !== xrayT || moving;
   });
   st.refresh();
   return st;
