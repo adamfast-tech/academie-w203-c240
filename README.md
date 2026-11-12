@@ -11,7 +11,7 @@ Cursus complet pour entretenir, diagnostiquer et réparer soi-même une **Merced
 - Diagnostic guidé (9 parcours par symptôme) et 46 codes défaut commentés
 - Couples de serrage, fluides et capacités, chaque valeur avec sa source (WIS, Haynes, fabricant, terrain) ; ce qui n'est pas confirmé est marqué « À vérifier »
 - Mon garage : dossiers en cours, carnet d'entretien, échéances calculées selon le kilométrage, avec jauge d'usure
-- 120 schémas interactifs, au moins un par leçon, dont six maquettes 3D (circuit de refroidissement avec modèle thermique et quatre pannes simulées ; train avant avec débattement, braquage et usures simulées ; boîte 722.6 en coupe avec convertisseur, pontage, fuite du connecteur 13 broches et train épicycloïdal à manipuler ; frein à disque avec usure, coupe et démontage pas à pas ; V6 M112 en fonctionnement, pas à pas possible ; berline complète sur l’accueil avec radiographie, ouvrants, teintes et environ 120 organes nommés au toucher ; three.js, chargé à la demande) : animations, simulateurs (circuit électrique, freinage, refroidissement, oscilloscope, données enregistrées…), cartes à explorer avec défi, procédures pas à pas, quiz de tri, remises en ordre, check-lists synchronisées
+- 120 schémas interactifs, au moins un par leçon, dont six maquettes 3D (circuit de refroidissement avec modèle thermique et quatre pannes simulées ; train avant avec débattement, braquage et usures simulées ; boîte 722.6 en coupe avec convertisseur, pontage, fuite du connecteur 13 broches et train épicycloïdal à manipuler ; frein à disque avec usure, coupe et démontage pas à pas ; V6 M112 en fonctionnement, pas à pas possible ; berline W203 fidèle sur l’accueil avec radiographie, teintes et environ 120 organes nommés au toucher ; three.js, chargé à la demande) : animations, simulateurs (circuit électrique, freinage, refroidissement, oscilloscope, données enregistrées…), cartes à explorer avec défi, procédures pas à pas, quiz de tri, remises en ordre, check-lists synchronisées
 - Cartes mémoire du vocabulaire (répétition espacée, glisser à droite ou à gauche), carte du parcours, sommaire de leçon
 - Fonctionne hors ligne une fois ouvert : polices, maquettes 3D et bibliothèques sont servies par le site lui-même, sans appel à un service tiers au chargement
 
@@ -30,3 +30,8 @@ Ouvre le lien dans Chrome, menu **⋮**, puis **Installer l'application** ou **A
 ## Avertissement
 
 Ce site est un support d'apprentissage. Pour toute intervention sur les freins, la direction, les trains roulants, les roues ou l'intérieur du moteur, vérifie les valeurs dans la documentation atelier Mercedes (WIS) avant serrage.
+
+## Crédits
+
+- Carrosserie 3D de l’accueil : « 2000 Mercedes C-class W203 » par [RES1N](https://sketchfab.com/Resinnnn) ([source](https://sketchfab.com/3d-models/2000-mercedes-c-class-w203-6cf3d6203793450ba9e6a572fc164c77)), licence [CC BY 4.0](http://creativecommons.org/licenses/by/4.0/). Modèle compressé et rematérialisé ; détail dans `models/LICENSE.txt`.
+- Rendu 3D : three.js et meshoptimizer (MIT). Polices : Barlow Condensed et IBM Plex (OFL). Licences dans `vendor/` et `fonts/`.

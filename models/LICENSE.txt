@@ -1,0 +1,8 @@
+w203.glb
+
+« 2000 Mercedes C-class W203 » par RES1N (https://sketchfab.com/Resinnnn)
+Source : https://sketchfab.com/3d-models/2000-mercedes-c-class-w203-6cf3d6203793450ba9e6a572fc164c77
+Licence : Creative Commons Attribution 4.0 International (CC BY 4.0) — http://creativecommons.org/licenses/by/4.0/
+
+Modifications apportées pour l'Académie W203 : maillage quantifié et compressé (meshopt, 21 Mo → 3 Mo), sans simplification ; à l'affichage, les matériaux sont remplacés (peinture, chromes, vitrages) et la carrosserie peut être rendue
+transparente.
