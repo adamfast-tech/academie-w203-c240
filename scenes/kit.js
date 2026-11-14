@@ -62,7 +62,7 @@ export function createStage(host, opts) {
   const key = new THREE.DirectionalLight(0xffffff, 1.6); key.position.set(40, 80, 60); scene.add(key);
   scene.add(new THREE.HemisphereLight(0xffffff, 0x2a3038, 0.55));
 
-  const orbit = { az: o.az, el: o.el, zoom: 1, taz: o.az, tel: o.el, tzoom: 1, target: new THREE.Vector3(...o.target) };
+  const orbit = { az: o.az, el: o.el, zoom: 1, taz: o.az, tel: o.el, tzoom: 1, target: new THREE.Vector3(...o.target), ttarget: null };
   const place = () => {
     const r = o.radius * orbit.zoom * (camera.aspect < o.fit ? Math.min(2.4, o.fit / camera.aspect) : 1), ce = Math.cos(orbit.el);
     camera.position.set(orbit.target.x + r * ce * Math.sin(orbit.az), orbit.target.y + r * Math.sin(orbit.el), orbit.target.z + r * ce * Math.cos(orbit.az));
@@ -104,10 +104,11 @@ export function createStage(host, opts) {
     if (raw > 0 && raw < 0.5) { slow = slow * 0.9 + raw * 0.1; if (++nf > 40 && slow > 0.03 && pr > 1) { pr = Math.max(1, pr - 0.5); renderer.setPixelRatio(pr); size(); nf = 0; slow = 0.016; } }
     const k = 1 - Math.pow(0.001, dt || 0.016);
     orbit.az += (orbit.taz - orbit.az) * k; orbit.el += (orbit.tel - orbit.el) * k; orbit.zoom += (orbit.tzoom - orbit.zoom) * k;
+    let gliding = false; if (orbit.ttarget) { orbit.target.lerp(orbit.ttarget, k); if (orbit.target.distanceToSquared(orbit.ttarget) < 1e-5) { orbit.target.copy(orbit.ttarget); orbit.ttarget = null; } else gliding = true; }
     const settling = Math.abs(orbit.taz - orbit.az) + Math.abs(orbit.tel - orbit.el) + Math.abs(orbit.tzoom - orbit.zoom) > 0.0005;
     let busy = false; frames.forEach((f) => { if (f(on ? dt : 0, dt) === true) busy = true; });
     place(); renderer.render(scene, camera); dirty = false;
-    if (vis && (on || settling || busy || dirty)) raf = requestAnimationFrame(tick); else last = 0;
+    if (vis && (on || settling || gliding || busy || dirty)) raf = requestAnimationFrame(tick); else last = 0;
   };
   function kick() { if (!raf && vis && !dead) raf = requestAnimationFrame(tick); }
   const io = new IntersectionObserver((es) => { if (!host.isConnected) { dispose(); return; } vis = es[0].isIntersecting; kick(); }); io.observe(host);
@@ -121,6 +122,8 @@ export function createStage(host, opts) {
     THREE, scene, camera, renderer, orbit, canvas: cv, view, dispose,
     onFrame(f) { frames.push(f); }, onTap(f) { taps.push(f); },
     refresh() { dirty = true; kick(); },
+    /* Fait glisser la caméra vers un point, à une distance donnée (en multiple du rayon de base). */
+    focus(point, zoom, el) { orbit.ttarget = new THREE.Vector3(...point); if (zoom) orbit.tzoom = zoom; if (el != null) orbit.tel = clampEl(el); dirty = true; kick(); },
     play() { on = true; kick(); }, pause() { on = false; }, get on() { return on; }
   };
 }

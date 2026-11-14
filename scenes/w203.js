@@ -1,6 +1,7 @@
 /* La berline W203 en 3D : carrosserie issue d'un modèle sous licence CC BY 4.0 (voir models/LICENSE.txt),
    organes procéduraux cliquables et nommés (code original) ; rendu par three.js (MIT). */
 import { THREE, createStage, cssVar, reduced, merge, at, seg, tube, nameAt } from './kit.js';
+import { info } from './w203-info.js';
 import { GLTFLoader } from '../vendor/three-GLTFLoader.js';
 import { MeshoptDecoder } from '../vendor/meshopt_decoder.module.js';
 
@@ -19,7 +20,7 @@ const SYS = [
 
 export function mount(el) {
   const host = el.querySelector('[data-stage]'); host.innerHTML = '';
-  const st = createStage(host, { target: [0, 5.6, 0], radius: 78, fov: 24, az: 0.72, el: 0.2, minEl: 0.02, maxEl: 1.4, zoom: [0.4, 1.5], fit: 1.55, label: 'Maquette 3D de la Mercedes C 240 W203' });
+  const st = createStage(host, { target: [0, 5.6, 0], radius: 78, fov: 24, az: 0.72, el: 0.2, minEl: 0.02, maxEl: 1.4, zoom: [0.1, 1.5], fit: 1.55, label: 'Maquette 3D de la Mercedes C 240 W203' });
   const { scene } = st;
   const accent = new THREE.Color(cssVar('--accent', '#1C5797')).lerp(new THREE.Color(0x4da3ff), 0.35);
   const std = (color, o) => new THREE.MeshStandardMaterial(Object.assign({ color, metalness: 0.7, roughness: 0.4 }, o || {}));
@@ -77,7 +78,7 @@ export function mount(el) {
   [-1, 1].forEach((s) => {
     const side = s > 0 ? 'droit' : 'gauche', [by, bz] = bank(2.2, s), [hy, hz] = bank(3.75, s), [cy2, cz2] = bank(4.55, s), [ey, ez] = bank(3.3, s);
     add('m112', 'Bloc-cylindres en aluminium', C.alu, box(6, 2.4, 2.3), at(EX, by, bz, s * Q));
-    add('m112', 'Culasse ' + side + ' (3 soupapes par cylindre)', C.cast, box(6.1, 1.25, 2.5), at(EX, hy, hz, s * Q));
+    add('m112', 'Culasse ' + side, C.cast, box(6.1, 1.25, 2.5), at(EX, hy, hz, s * Q));
     add('m112', 'Couvre-culasse ' + side, C.dark, box(6.15, 0.55, 2.3), at(EX, cy2, cz2, s * Q));
     for (let i = -1; i <= 1; i++) {
       add('m112', 'Bobine d’allumage à double sortie', C.plastic, box(0.75, 0.35, 0.9), at(EX + i * 1.95, cy2 + 0.3, cz2 + s * 0.3, s * Q));
@@ -168,6 +169,19 @@ export function mount(el) {
   add('clim', 'Conduite basse pression', C.blue, tube([[10.3, 6.2, -1.6], [11.6, 7.4, -3], [15, 7, -4.6], [17.2, 4.6, -3.6], [17.6, 4.1, -3.1]], 0.13));
   add('clim', 'Radiateur de chauffage', C.cu, box(0.5, 1.6, 2.6), at(8.5, 5, 0.6)); add('clim', 'Durites de chauffage', C.rubber, tube([[12.3, 6.4, -0.5], [10.9, 6, 0], [9.6, 5.2, 0.4]], 0.14));
   const organs = Object.keys(S).map((k) => put(merge(S[k]), M_[k], k)); car.children.forEach((o) => { if (o.isMesh && o.material === M_.disc) organs.push(o); });
+  /* Catalogue des pièces : pour chacune, ses triangles dans le maillage du système et sa boîte englobante. */
+  const CAT = [], byKey = new Map(), tv = new THREE.Vector3();
+  organs.forEach((m) => {
+    const names = m.geometry.userData.names, sys = m.userData.part;
+    if (!names || !names.length) { const key = sys + '|' + m.userData.name; let e = byKey.get(key); if (!e) { e = { sys, name: m.userData.name, meshes: [], box: new THREE.Box3() }; byKey.set(key, e); CAT.push(e); } e.meshes.push(m); m.geometry.computeBoundingBox(); e.box.union(m.geometry.boundingBox.clone().applyMatrix4(m.matrix)); return; }
+    const pa = m.geometry.attributes.position; let start = 0;
+    names.forEach(([end, name]) => { if (name) { const key = sys + '|' + name; let e = byKey.get(key); if (!e) { e = { sys, name, mesh: m, ranges: [], box: new THREE.Box3() }; byKey.set(key, e); CAT.push(e); } e.ranges.push([start, end]); for (let i = start * 3; i < end * 3; i++) e.box.expandByPoint(tv.fromBufferAttribute(pa, i)); } start = end; });
+  });
+  CAT.forEach((e, i) => { e.i = i; e.center = e.box.getCenter(new THREE.Vector3()); e.size = e.box.getSize(new THREE.Vector3()).length(); e.norm = e.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); });
+  const hiMat = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, metalness: 0.4, roughness: 0.4, emissive: 0x2f7fd6, emissiveIntensity: 0.3 });
+  const hiDisc = new THREE.MeshStandardMaterial({ color: 0xc4cad1, metalness: 0.8, roughness: 0.35, emissive: 0x2f7fd6, emissiveIntensity: 0.5 });
+  let hi = null, focus = null, dim = 0;
+  const sysMats = Object.keys(S).map((k) => M_[k]).concat([M_.disc]);
   /* Ombre au sol */
   const sh = document.createElement('canvas'); sh.width = 256; sh.height = 128; const g2 = sh.getContext('2d'); g2.filter = 'blur(14px)'; g2.fillStyle = 'rgba(0,0,0,.6)'; g2.beginPath(); g2.roundRect(34, 34, 188, 60, 26); g2.fill();
   const shadow = new THREE.Mesh(new THREE.PlaneGeometry(64, 32), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sh), transparent: true, depthWrite: false })); shadow.rotation.x = -Math.PI / 2; shadow.position.y = 0.01; car.add(shadow);
@@ -176,27 +190,58 @@ export function mount(el) {
   const mods = (window.W203 && window.W203.modules) || [], ui = el.querySelector('[data-ui]'), layer = document.createElement('div'); layer.className = 'hot3d'; host.appendChild(layer);
   const dots = SYS.map(([id, label, pos]) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'hot3d-dot'; b.dataset.sys = id; b.setAttribute('aria-label', label); b.innerHTML = `<span>${label}</span>`; layer.appendChild(b); b.addEventListener('click', () => choose(id)); return { id, b, v: new THREE.Vector3(...pos) }; });
   const more = '<div class="vchips"><span class="viz-note">Maquettes détaillées</span>' + Object.keys(MAQ).flatMap((k) => MAQ[k]).map(([t, l]) => `<a class="vchip" href="#l-${l}">${t.replace(' en 3D', '')}</a>`).join('') + '<a class="vchip" href="#ref-schemas">Toutes</a></div>';
-  const hint = '<p class="viz-note">Glisse pour tourner la voiture, pince pour zoomer. Touche un système : la carrosserie devient transparente. Touche ensuite une pièce pour connaître son nom.</p>';
+  const SYSLABEL = Object.fromEntries(SYS.map(([id, label]) => [id, label]));
+  const tag = document.createElement('div'); tag.className = 'hot3d-tag'; tag.hidden = true; host.appendChild(tag);
+  /* Mini-carte : la voiture vue de dessus, avant à gauche, avec la position de la pièce choisie. */
+  const map = document.createElement('div'); map.className = 'map3d'; map.hidden = true; map.setAttribute('aria-hidden', 'true');
+  map.innerHTML = '<svg viewBox="0 0 100 100"><path class="mb" d="M8 32 Q6 50 8 68 Q10 80 22 82 L80 84 Q93 82 94 66 L94 34 Q93 18 80 16 L22 18 Q10 20 8 32Z"/><path class="mg" d="M34 24 L60 23 Q66 50 60 77 L34 76 Q29 50 34 24Z"/><rect class="mw" x="15" y="11" width="13" height="6" rx="2"/><rect class="mw" x="15" y="83" width="13" height="6" rx="2"/><rect class="mw" x="68" y="10" width="13" height="6" rx="2"/><rect class="mw" x="68" y="84" width="13" height="6" rx="2"/><g data-dot><circle class="mp" r="9"/><circle class="md" r="3.4"/></g></svg><span>← avant</span><span><b data-h></b></span>'; host.appendChild(map);
+  const hint = '<p class="viz-note">Glisse pour tourner la voiture, pince pour zoomer. Touche un système, puis une pièce : la caméra plonge dessus et sa fiche s’affiche. Tu peux aussi chercher une pièce par son nom.</p>';
   const credit = '<p class="viz-note">Carrosserie : « 2000 Mercedes C-class W203 » par <a href="https://sketchfab.com/Resinnnn" target="_blank" rel="noopener">RES1N</a>, licence <a href="http://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>, compressée et rematérialisée. Organes : maquette de principe de l’Académie.</p>';
-  ui.innerHTML = `<div class="vchips" role="group" aria-label="Systèmes de la voiture">${SYS.map(([id, label]) => `<button class="vbtn sm" type="button" data-sys="${id}" aria-pressed="false">${label}</button>`).join('')}<label class="vtoggle"><input type="checkbox" data-xray><span class="vtrack" aria-hidden="true"></span>Radiographie</label></div><div class="vchips"><span class="viz-note">Ouvrir</span>${[['doors', 'Portes'], ['boot', 'Coffre']].map(([k, t]) => `<label class="vtoggle"><input type="checkbox" data-open="${k}"><span class="vtrack" aria-hidden="true"></span>${t}</label>`).join('')}<span class="viz-note" style="margin-left:8px">Teinte</span>${PAINTS.map(([n, c], i) => `<button type="button" class="swatch3d${i ? '' : ' sel'}" data-paint="${i}" style="--c:#${c.toString(16).padStart(6, '0')}" aria-label="${n}" title="${n}"></button>`).join('')}</div><div class="hot3d-card" data-card aria-live="polite">${hint}</div>${more}${credit}`;
+  ui.innerHTML = `<div class="vchips" role="group" aria-label="Systèmes de la voiture">${SYS.map(([id, label]) => `<button class="vbtn sm" type="button" data-sys="${id}" aria-pressed="false">${label}</button>`).join('')}<label class="vtoggle"><input type="checkbox" data-xray><span class="vtrack" aria-hidden="true"></span>Radiographie</label></div><div class="vchips"><span class="viz-note">Ouvrir</span>${[['doors', 'Portes'], ['boot', 'Coffre']].map(([k, t]) => `<label class="vtoggle"><input type="checkbox" data-open="${k}"><span class="vtrack" aria-hidden="true"></span>${t}</label>`).join('')}<span class="viz-note" style="margin-left:8px">Teinte</span>${PAINTS.map(([n, c], i) => `<button type="button" class="swatch3d${i ? '' : ' sel'}" data-paint="${i}" style="--c:#${c.toString(16).padStart(6, '0')}" aria-label="${n}" title="${n}"></button>`).join('')}</div><div class="filters" style="margin:0"><input class="input" type="search" data-find placeholder="Chercher une pièce : réservoir, sonde, durite…" autocomplete="off" aria-label="Chercher une pièce"></div><div class="vchips parts3d" data-parts hidden></div><div class="hot3d-card" data-card aria-live="polite">${hint}</div>${more}${credit}`;
   ui.querySelectorAll('.vbtn[data-sys]').forEach((b) => b.addEventListener('click', () => choose(b.dataset.sys)));
   const xr = ui.querySelector('[data-xray]');
   ui.querySelectorAll('[data-open]').forEach((c) => c.addEventListener('change', () => { const on = c.checked ? 1 : 0; spin = false; panels.forEach((pn) => { if (pn.key === c.dataset.open) pn.t = on; }); if (on) st.view(c.dataset.open === 'boot' ? 2.5 : 0.85, 0.42); st.orbit.tzoom = panels.some((pn) => pn.t) ? 1.32 : 1; st.refresh(); }));
   const setPaint = (i) => { const [, c, mt, r] = PAINTS[i] || PAINTS[0]; M_.paint.color.setHex(c); M_.paint.metalness = mt; M_.paint.roughness = r; ui.querySelectorAll('[data-paint]').forEach((b) => b.classList.toggle('sel', +b.dataset.paint === i)); try { localStorage.setItem('w203-teinte', String(i)); } catch (e) { /* ignoré */ } st.refresh(); };
   ui.querySelectorAll('[data-paint]').forEach((b) => b.addEventListener('click', () => setPaint(+b.dataset.paint)));
   try { const sv = +localStorage.getItem('w203-teinte'); if (sv > 0 && PAINTS[sv]) setPaint(sv); } catch (e) { /* ignoré */ }
-  let sel = null, spin = !reduced(), pulse = 0, xray = 0, xrayT = 0, manual = false, wasSolid = null;
-  xr.addEventListener('change', () => { manual = xr.checked; xrayT = manual || (sel && sel !== 'carrosserie') ? 1 : 0; st.refresh(); });
+  let sel = null, spin = !reduced(), pulse = 0, xray = 0, xrayT = 0, manual = false, wasSolid = null, wasDim = false;
+  xr.addEventListener('change', () => { manual = xr.checked; if (!manual) unfocus(); xrayT = manual || (sel && sel !== 'carrosserie') ? 1 : 0; st.refresh(); });
+  const partsEl = ui.querySelector('[data-parts]'), findEl = ui.querySelector('[data-find]');
+  const listParts = (arr, title) => { partsEl.hidden = !arr.length; partsEl.innerHTML = arr.length ? `<span class="viz-note">${title}</span>` + arr.map((e) => `<button class="vbtn sm${focus === e ? ' sel' : ''}" type="button" data-pi="${e.i}">${e.name}</button>`).join('') : ''; };
+  partsEl.addEventListener('click', (ev) => { const b = ev.target.closest('[data-pi]'); if (b) focusOn(CAT[+b.dataset.pi]); });
+  findEl.addEventListener('input', () => { const qy = findEl.value.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); if (qy.length < 2) { listParts(sel ? CAT.filter((e) => e.sys === sel) : [], 'Pièces'); return; } const r = CAT.filter((e) => e.norm.includes(qy)).slice(0, 16); listParts(r, r.length ? 'Résultats' : ''); if (!r.length) { partsEl.hidden = false; partsEl.innerHTML = '<span class="viz-note">Aucune pièce de ce nom dans la maquette.</span>'; } });
+  /* Zoom sur une pièce : la caméra s'en approche, le reste s'estompe, la fiche s'affiche. */
+  function focusOn(e) {
+    if (!e) return; focus = e; spin = false; xrayT = 1; xr.checked = true;
+    if (hi) { car.remove(hi); hi = null; }
+    if (e.mesh) { const hg = new THREE.BufferGeometry(); ['position', 'normal', 'color'].forEach((k) => { if (e.mesh.geometry.attributes[k]) hg.setAttribute(k, e.mesh.geometry.attributes[k]); }); e.ranges.forEach(([a, b]) => hg.addGroup(a * 3, (b - a) * 3, 0)); hi = new THREE.Mesh(hg, [hiMat]); }
+    else { hi = new THREE.Group(); e.meshes.forEach((m) => { const c = new THREE.Mesh(m.geometry, hiDisc); c.position.copy(m.position); c.scale.copy(m.scale); hi.add(c); }); }
+    hi.renderOrder = 9; car.add(hi);
+    const dist = Math.max(24, Math.min(70, e.size * 2.4 + 16)), side = e.center.z > 1.2 ? 0.55 : e.center.z < -1.2 ? Math.PI - 0.55 : (Math.cos(st.orbit.az) >= 0 ? 0.6 : Math.PI - 0.6); st.view(e.center.x < 0 ? Math.PI - side : side, 0.52); st.focus([e.center.x, e.center.y, e.center.z], dist / 78);
+    const mx = 50 - e.center.x / 22.6 * 44, mz = 50 - e.center.z / 8.7 * 34; map.hidden = false; map.querySelector('[data-dot]').setAttribute('transform', `translate(${mx.toFixed(1)},${mz.toFixed(1)})`); map.querySelector('[data-h]').textContent = e.center.y < 3 ? 'sous la voiture' : e.center.y < 6 ? 'en bas' : e.center.y < 8.2 ? 'à mi-hauteur' : 'en haut';
+    if (sel !== e.sys) { sel = e.sys; el.querySelectorAll('.vbtn[data-sys]').forEach((b) => { const on = b.dataset.sys === sel; b.classList.toggle('sel', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); }); }
+    if (!findEl.value.trim()) listParts(CAT.filter((x) => x.sys === sel), 'Pièces'); else partsEl.querySelectorAll('[data-pi]').forEach((b) => b.classList.toggle('sel', +b.dataset.pi === e.i));
+    const f = info(e.name), same = CAT.filter((x) => x.sys === e.sys), k = same.indexOf(e), m = mods.find((x) => x.id === e.sys), card = ui.querySelector('[data-card]');
+    card.innerHTML = `<div><p class="eyebrow">${SYSLABEL[e.sys] || ''} · pièce ${k + 1} sur ${same.length}</p><b>${e.name}</b>${f ? `<p><strong>Rôle.</strong> ${f[0]}</p><p><strong>Où.</strong> ${f[1]}</p>` : '<p>Pièce repérée dans la maquette ; sa fiche détaillée reste à écrire.</p>'}</div><div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn small quiet" type="button" data-nav="-1" aria-label="Pièce précédente">←</button><button class="btn small quiet" type="button" data-nav="1" aria-label="Pièce suivante">→</button><button class="btn small" type="button" data-nav="0">Vue d’ensemble</button>${m ? `<a class="btn small quiet" href="#m-${m.id}">Module ${m.code}</a>` : ''}</div>`;
+    tag.textContent = e.name; tag.hidden = false; st.refresh();
+  }
+  function unfocus() { if (!focus) return; focus = null; map.hidden = true; if (hi) { car.remove(hi); hi = null; } tag.hidden = true; st.focus([0, 5.6, 0], 1); }
+  ui.querySelector('[data-card]').addEventListener('click', (ev) => { const b = ev.target.closest('[data-nav]'); if (!b || !focus) return; const d = +b.dataset.nav; if (!d) { const keep = sel; unfocus(); sel = null; choose(keep); return; } const same = CAT.filter((x) => x.sys === focus.sys); focusOn(same[(same.indexOf(focus) + d + same.length) % same.length]); });
   function choose(id) {
+    unfocus();
     sel = sel === id ? null : id; spin = false;
     el.querySelectorAll('[data-sys]').forEach((b) => { const on = b.dataset.sys === sel; b.classList.toggle('sel', on); if (b.hasAttribute('aria-pressed')) b.setAttribute('aria-pressed', on ? 'true' : 'false'); });
     const m = mods.find((x) => x.id === sel), card = ui.querySelector('[data-card]');
     card.innerHTML = m ? `<div><p class="eyebrow">${m.code} · ${m.lessons.length} leçons</p><b>${m.title}</b><p>${m.desc}</p><p class="piece" data-piece></p></div><div class="row" style="gap:8px;flex-wrap:wrap">${(MAQ[m.id] || []).map(([t, l]) => `<a class="btn small" href="#l-${l}">${t}</a>`).join('')}<a class="btn small quiet" href="#m-${m.id}">Ouvrir le module</a></div>` : hint;
     xrayT = manual || (sel && sel !== 'carrosserie') ? 1 : 0; xr.checked = xrayT === 1;
+    if (!findEl.value.trim()) listParts(sel ? CAT.filter((e) => e.sys === sel) : [], 'Pièces');
     st.refresh();
   }
   const ray = new THREE.Raycaster();
-  st.onTap((ndc) => { ray.setFromCamera(ndc, st.camera); const hits = ray.intersectObjects(car.children, true).filter((h) => h.object.userData.part); if (!hits.length) return; const h = (xray > 0.5 && hits.find((x) => !x.object.userData.skin)) || hits[0]; const o = h.object, piece = o.userData.name || nameAt(o.geometry, h.faceIndex); if (o.userData.part !== sel) choose(o.userData.part); const pc = ui.querySelector('[data-piece]'); if (pc) pc.innerHTML = piece ? 'Pièce touchée : <strong>' + piece + '</strong>' : ''; });
+  st.onTap((ndc) => { ray.setFromCamera(ndc, st.camera); const hits = ray.intersectObjects(car.children, true).filter((h) => h.object.userData.part && h.object.visible && h.object !== hi); if (!hits.length) return;
+    const h = (xray > 0.5 && hits.find((x) => !x.object.userData.skin)) || hits[0], o = h.object;
+    if (!o.userData.skin) { const nm = o.userData.name || nameAt(o.geometry, h.faceIndex), e = byKey.get(o.userData.part + '|' + nm); if (e) { focusOn(e); return; } }
+    const piece = o.userData.name; if (o.userData.part !== sel || focus) { sel = null; choose(o.userData.part); } const pc = ui.querySelector('[data-piece]'); if (pc) pc.innerHTML = piece ? 'Pièce touchée : <strong>' + piece + '</strong>' : ''; });
   st.canvas.addEventListener('pointerdown', () => { spin = false; });
   const p = new THREE.Vector3();
   st.onFrame((dt, real) => {
@@ -206,14 +251,16 @@ export function mount(el) {
     let moving = false; const kk = 1 - Math.pow(0.004, real || 0.016);
     panels.forEach((pn) => { pn.v += (pn.t - pn.v) * kk; if (Math.abs(pn.t - pn.v) < 0.003) pn.v = pn.t; else moving = true; if (reduced()) pn.v = pn.t; pn.pv.rotation[pn.axis] = pn.angle * pn.v; });
     const solid = xray < 0.01;
-    if (solid !== wasSolid) { wasSolid = solid; skins.forEach(([m, , op, xo]) => { if (xo >= 1) return; const tr = !solid || op < 1; m.transparent = tr; m.depthWrite = !tr; m.needsUpdate = true; }); }
-    skins.forEach(([m, , op, xo]) => { m.opacity = op + (xo - op) * xray; });
+    const dimOn = dim > 0.01; if (solid !== wasSolid || dimOn !== wasDim) { wasSolid = solid; wasDim = dimOn; skins.forEach(([m, , op, xo]) => { const tr = (xo < 1 && !solid) || op < 1 || dimOn; if (m.transparent !== tr) { m.transparent = tr; m.depthWrite = !tr; m.needsUpdate = true; } }); }
+    skins.forEach(([m, , op, xo]) => { m.opacity = (op + (xo - op) * xray) * (1 - 0.8 * dim); });
+    const dT = focus ? 1 : 0; if (dim !== dT) { const was = dim > 0.01; dim += (dT - dim) * (1 - Math.pow(0.003, real || 0.016)); if (Math.abs(dT - dim) < 0.01) dim = dT; const now = dim > 0.01; if (was !== now) sysMats.forEach((m) => { m.transparent = now; m.depthWrite = !now; m.needsUpdate = true; }); sysMats.forEach((m) => { m.opacity = 1 - 0.8 * dim; }); moving = true; }
+    if (focus) { const pu = 0.26 + 0.14 * Math.sin(pulse * 4); hiMat.emissive.copy(accent); hiMat.emissiveIntensity = pu; hiDisc.emissive.copy(accent); hiDisc.emissiveIntensity = pu; p.copy(focus.center).project(st.camera); tag.style.transform = `translate(${((p.x + 1) / 2 * host.clientWidth).toFixed(1)}px,${((1 - p.y) / 2 * host.clientHeight).toFixed(1)}px)`; }
     const show = xray > 0.02 || !bodyReady; organs.forEach((o) => { o.visible = show; });
-    layer.style.opacity = xray.toFixed(2); layer.style.visibility = xray > 0.02 ? 'visible' : 'hidden';
-    Object.keys(HI).forEach((k) => HI[k].forEach((m) => { if (k === sel) m.emissive.copy(accent).multiplyScalar((k === 'carrosserie' ? 0.16 : 0.3) + 0.14 * Math.sin(pulse * 4) * (k === 'carrosserie' ? 0.5 : 1)); else m.emissive.setHex(0); }));
+    layer.style.opacity = xray.toFixed(2); layer.style.visibility = xray > 0.02 && !focus ? 'visible' : 'hidden';
+    Object.keys(HI).forEach((k) => HI[k].forEach((m) => { if (k === sel && !focus) m.emissive.copy(accent).multiplyScalar((k === 'carrosserie' ? 0.16 : 0.3) + 0.14 * Math.sin(pulse * 4) * (k === 'carrosserie' ? 0.5 : 1)); else m.emissive.setHex(0); }));
     const w = host.clientWidth, h = host.clientHeight;
     dots.forEach((d) => { d.b.classList.toggle('sel', d.id === sel); p.copy(d.v).project(st.camera); d.b.style.transform = `translate(${((p.x + 1) / 2 * w).toFixed(1)}px,${((1 - p.y) / 2 * h).toFixed(1)}px)`; });
-    return !!sel || xray !== xrayT || moving;
+    return !!sel || !!focus || xray !== xrayT || moving;
   });
   st.refresh();
   return st;
