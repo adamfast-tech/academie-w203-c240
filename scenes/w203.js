@@ -112,7 +112,8 @@ export function mount(el) {
   add('m112', 'Silencieux arrière', C.exh, cx(1.15, 5, 18), at(-18.6, 3.3, -3.6, 0, 0, 0, 1, 0.72, 1.8)); add('m112', 'Sortie d’échappement', C.white, cx(0.42, 1.1, 16), at(-21.9, 2.8, -4.6, 0, 0, 0, 1, 0.75, 1));
   add('m112', 'Radiateur', C.alu, box(0.42, 4.2, 10.6), at(19.95, 5, 0)); add('m112', 'Ventilateur électrique', C.dark, cx(1.95, 0.35, 28), at(19.45, 5, 0)); for (let i = 0; i < 7; i++) add('m112', 'Ventilateur électrique', C.plastic, box(0.1, 1.5, 0.5), at(19.25, 5, 0, i * 0.8976 + 0.3, 0, 0, 1, 1, 1));
   add('m112', 'Durite supérieure', C.rubber, tube([[19.7, 6.7, -2.6], [19.1, 6.8, -2.4], [18.5, 6.4, -1.2], [18.3, 5.9, -0.6]], 0.24)); add('m112', 'Durite inférieure', C.rubber, tube([[19.7, 3.4, 2.8], [18.9, 3.2, 2.2], [18.6, 3.5, 1.2]], 0.24));
-  add('m112', 'Vase d’expansion', C.white, new THREE.SphereGeometry(0.95, 16, 12), at(18.9, 6.5, -5.3, 0, 0, 0, 1.15, 0.85, 1));
+  add('m112', 'Vase d’expansion', C.white, new THREE.SphereGeometry(0.95, 16, 12), at(16.7, 6.9, 5.7, 0, 0, 0, 1.15, 0.85, 1)); add('m112', 'Bouchon du vase d’expansion', C.dark, cy(0.32, 0.3, 12), at(16.7, 7.8, 5.7)); add('m112', 'Durite du vase d’expansion', C.rubber, tube([[16.9, 6.2, 5.3], [18, 5.4, 3.6], [18.5, 5.0, 1.0]], 0.12));
+  add('m112', 'Vanne EGR', C.alu, cy(0.4, 0.8, 12), at(12.2, 6.0, 2.7)); add('m112', 'Tube EGR', C.steel, tube([[12.2, 6.4, 2.7], [12.3, 6.9, 1.8], [12.9, 7.1, 1.0]], 0.12));
 
   /* Boîte 722.6 et transmission */
   add('boite', 'Carter de convertisseur de couple', C.alu, new THREE.CylinderGeometry(1.2, 2.05, 1.7, 28).rotateZ(Math.PI / 2), at(11.2, EY + 0.1, 0));
@@ -172,8 +173,8 @@ export function mount(el) {
   add('elec-w203', 'Réservoir de lave-glace', C.white, box(1.5, 2.2, 2.2), at(19.6, 4.6, -6.3)); add('elec-w203', 'Pompe de lave-glace', C.dark, cy(0.22, 0.7, 8), at(19.2, 3.6, -5.6)); add('elec-w203', 'Tuyau de lave-glace', C.dark, tube([[19.2, 3.9, -5.6], [17, 7.6, -6.4], [12, 8.3, -5.2], [10.4, 9.0, -2.4]], 0.045));
   add('elec-w203', 'Alternateur', C.alu, cx(0.78, 1.5, 18), at(17.9, 5.5, 3.3)); add('elec-w203', 'Démarreur', C.cast, cx(0.45, 1.9, 14), at(12.3, 3.3, 2.5)); add('elec-w203', 'Démarreur', C.cast, cx(0.28, 1.2, 10), at(12.5, 3.95, 2.7));
   add('elec-w203', 'Câble de démarreur', C.red, tube([[12.4, 7.6, 5.5], [12.9, 6, 4.4], [12.6, 4.4, 3]], 0.09)); add('elec-w203', 'Tresse de masse', C.cu, tube([[10.8, 7.6, 5.5], [10.6, 6.6, 6.4], [10.9, 5.6, 6.6]], 0.08));
-  add('elec-w203', 'SAM avant (fusibles et relais)', C.plastic, box(1.9, 1.1, 2.3), at(12.1, 6.9, -5.6)); add('elec-w203', 'Calculateur moteur ME', C.alu, box(1.5, 1.2, 0.5), at(11.3, 6.6, 2.4));
-  add('elec-w203', 'SAM arrière (coffre)', C.plastic, box(1.8, 1.4, 0.6), at(-17.8, 5.6, 6.6)); add('elec-w203', 'Capteur de vilebrequin', C.yellow, cy(0.12, 0.5, 8), at(12.5, 4.9, -1.5));
+  add('elec-w203', 'SAM avant (fusibles et relais)', C.plastic, box(1.9, 1.1, 2.3), at(12.1, 6.9, -5.6)); add('elec-w203', 'Calculateur moteur ME', C.alu, box(1.5, 1.2, 0.5), at(11.0, 7.0, -4.6));
+  add('elec-w203', 'SAM arrière (coffre)', C.plastic, box(1.8, 1.4, 0.6), at(-17.8, 5.6, -6.6)); add('elec-w203', 'Capteur de vilebrequin', C.yellow, cy(0.12, 0.5, 8), at(12.5, 4.9, -1.5));
   add('elec-w203', 'Capteur d’arbre à cames', C.yellow, cy(0.12, 0.45, 8), at(18.2, 6.5, 2.2)); 
   [-1, 1].forEach((s) => add('elec-w203', 'Faisceau principal', C.yellow, tube([[11.5, 6.4, s * 5.9], [9.6, 4, s * 6.6], [6, 2.95, s * 6.7], [-8, 2.95, s * 6.6], [-14, 4.2, s * 6.4], [-18, 5.2, s * 6.7], [-21.4, 7.4, s * 6]], 0.1)));
   add('elec-w203', 'Faisceau moteur', C.yellow, tube([[12.1, 6.9, -5], [12, 7.3, -2], [13, 7.75, 0], [16.5, 7.75, 0.4], [18.1, 6.6, 2.2]], 0.09));
