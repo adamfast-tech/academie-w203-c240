@@ -15,7 +15,7 @@ Cursus complet pour entretenir, diagnostiquer et réparer soi-même une **Merced
 - Cartes mémoire du vocabulaire (répétition espacée, glisser à droite ou à gauche), carte du parcours, sommaire de leçon
 - Fonctionne hors ligne une fois ouvert : polices, maquettes 3D et bibliothèques sont servies par le site lui-même, sans appel à un service tiers au chargement
 
-Sans compte, la progression et le carnet restent dans le navigateur de l'appareil. Avec un compte (le même que sur les autres académies : e-mail ou nom d'utilisateur + mot de passe), tout est synchronisé entre appareils via Supabase : leçons, quiz, voiture, dossiers, carnet, échéances et outillage. Chaque utilisateur ne peut lire et modifier que sa propre ligne (RLS). Schéma : `supabase/w203_progress.sql`.
+Sans compte, la progression et le carnet restent sur l'appareil. Avec un compte (le même que sur les autres académies : e-mail ou nom d'utilisateur + mot de passe), tout est synchronisé entre appareils : leçons, quiz, voiture, dossiers, carnet, échéances et outillage.
 
 ## Installer sur iPhone ou iPad
 
