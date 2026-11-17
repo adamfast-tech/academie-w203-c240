@@ -87,13 +87,18 @@ export function mount(el) {
       add('m112', 'Conduit du collecteur d’admission', C.mag, seg([EX + i * 1.9, 7.05, s * 0.85], [EX + i * 1.9, iy, iz], 0.34, 10));
       add('m112', 'Collecteur d’échappement ' + side, C.hot, tube([[EX + i * 1.9, ey, ez], [EX + i * 1.9 - 0.3, ey - 0.5, ez + s * 0.45], [13.2 - i * 0.1, 3.6, s * 3.1], [12.3, 3.1, s * 2.5]], 0.2));
       add('m112', 'Injecteur', C.gold, seg([EX + i * 1.9, 6.9, s * 1.3], [EX + i * 1.9, 6.5, s * 1.5], 0.13, 8));
+      /* Double allumage : bougie A sous la bobine, bougie B sur le flanc de la culasse, reliée par un fil. */
+      const xc = EX + i * 1.95, [ay, az] = P(3.75, 0.25, s), [a2y, a2z] = P(3.05, 0.25, s), [b1y, b1z] = P(3.3, -0.6, s), [b2y, b2z] = P(3.3, -1.05, s), [w1y, w1z] = P(3.95, -0.2, s), [w2y, w2z] = P(3.6, -1.15, s);
+      add('m112', 'Bougie d’allumage', C.white, seg([xc, ay, az], [xc, a2y, a2z], 0.09, 8)); add('m112', 'Bougie d’allumage', C.white, seg([xc + 0.55, b1y, b1z], [xc + 0.55, b2y, b2z], 0.09, 8));
+      add('m112', 'Fil de bougie', C.dark, tube([[xc, w1y, w1z], [xc + 0.25, w2y, w2z], [xc + 0.55, b2y, b2z]], 0.06));
     }
-    add('m112', 'Rampe d’injection ' + side + 'e', C.steel, cx(0.16, 5.4, 8), at(EX, 6.95, s * 1.3));
+    add('m112', 'Rampe d’injection ' + (s > 0 ? 'droite' : 'gauche'), C.steel, cx(0.16, 5.4, 8), at(EX, 6.95, s * 1.3));
     add('m112', 'Catalyseur ' + side, C.exh, cx(0.72, 2.6, 16), at(10.4, 2.4, s * 2.3)); add('m112', 'Catalyseur ' + side, C.exh, tube([[12.3, 3.1, s * 2.5], [12.0, 2.75, s * 2.4], [11.7, 2.4, s * 2.3]], 0.3));
     add('m112', 'Sonde lambda', C.gold, seg([12.6, 3.35, s * 2.85], [12.75, 3.85, s * 3.25], 0.08, 6));
     add('m112', 'Ligne d’échappement', C.exh, tube([[9.1, 2.4, s * 2.3], [6, 2.45, s * 1.8], [-2, 2.5, s * 1.5], [-4.2, 2.6, s * 0.7]], 0.26));
     add('m112', 'Réservoir de carburant', C.plastic, box(4.4, 1.5, 3.8), at(-8.9, 3.6, s * 3.3));
-    add('m112', 'Durite de reniflard ' + side + 'e', C.rubber, tube([[13.2, cy2 + 0.15, s * (Math.abs(cz2) - 0.3)], [12.7, 7.5, s * 1.9], [12.4, 7.55, s * 0.8], [12.3, 7.45, s * 0.25]], 0.12));
+    add('m112', 'Support moteur ' + side, C.rubber, cy(0.45, 0.75, 16), at(15.6, 2.95, s * 2.3)); add('m112', 'Support moteur ' + side, C.steel, box(0.9, 0.3, 0.9), at(15.6, 3.55, s * 2.0)); add('m112', 'Support moteur ' + side, C.steel, box(1.1, 0.15, 1.1), at(15.6, 2.5, s * 2.3));
+    add('m112', 'Durite de reniflard ' + (s > 0 ? 'droite' : 'gauche'), C.rubber, tube([[13.2, cy2 + 0.15, s * (Math.abs(cz2) - 0.3)], [12.7, 7.5, s * 1.9], [12.4, 7.55, s * 0.8], [12.3, 7.45, s * 0.25]], 0.12));
     add('m112', 'Clapet d’air secondaire ' + side, C.alu, cy(0.28, 0.55, 10), at(18.2, 6.75, s * 1.2)); add('m112', 'Conduit d’air secondaire', C.rubber, tube([[18.55, 7.1, s * 0.6], [18.4, 7.0, s * 0.95], [18.2, 6.85, s * 1.2]], 0.1));
     add('m112', 'Conduit d’air frais ' + side, C.plastic, tube([[20.2, 6.6, s * 3.0], [19.5, 7.2, s * 3.0], [18.6, 7.55, s * 2.6], [17.8, 7.75, s * 2.2]], 0.45));
   });
@@ -102,6 +107,8 @@ export function mount(el) {
   add('m112', 'Boîtier de filtre à air', C.plastic, box(5.6, 0.75, 5.0), at(15.1, 8.05, 0)); add('m112', 'Boîtier de filtre à air', C.dark, box(4.2, 0.15, 3.6), at(15.1, 8.5, 0));
   add('m112', 'Débitmètre d’air massique', C.alu, cx(0.5, 0.9, 16), at(11.8, 8.0, 0)); add('m112', 'Coude d’admission', C.rubber, tube([[11.35, 8.0, 0], [11.0, 7.85, 0], [10.95, 7.4, 0], [11.4, 7.02, 0]], 0.44));
   add('m112', 'Boîtier papillon', C.alu, cx(0.52, 0.7, 16), at(12.1, 7.0, 0)); add('m112', 'Boîtier papillon', C.dark, box(0.6, 0.7, 0.6), at(12.1, 7.0, -0.75));
+  add('m112', 'Bouchon de remplissage d’huile', C.dark, cy(0.35, 0.25, 16), at(16.6, 8.5, 2.1));
+  add('m112', 'Tube de jauge d’huile', C.steel, tube([[12.7, 2.7, 1.0], [12.6, 3.15, 1.35], [12.1, 3.7, 2.0], [11.95, 5.5, 2.0], [11.95, 7.6, 1.4], [11.9, 8.25, 1.2]], 0.09)); add('m112', 'Tube de jauge d’huile', C.dark, cy(0.16, 0.25, 10), at(11.9, 8.35, 1.2));
   /* Façade : courroie unique, poulies et accessoires (vue de face : pompe de direction et compresseur à gauche, alternateur à droite) */
   add('m112', 'Pompe à air secondaire', C.dark, cz(0.5, 1.3, 16), at(18.55, 7.1, 0));
   add('m112', 'Boîtier de thermostat', C.alu, cy(0.38, 0.6, 12), at(18.45, 6.25, -0.55, 0, 0, 1.2)); add('m112', 'Sonde de température de liquide', C.gold, cy(0.1, 0.45, 8), at(18.3, 6.25, -1.05));
@@ -124,6 +131,7 @@ export function mount(el) {
   add('boite', 'Boîte automatique 722.6 (5 rapports)', C.alu, new THREE.CylinderGeometry(0.95, 1.5, 5.4, 24).rotateZ(Math.PI / 2), at(7.7, EY + 0.05, 0));
   for (let i = 0; i < 6; i++) add('boite', 'Boîte automatique 722.6 (5 rapports)', C.cast, box(4.6, 0.1, 0.1), at(7.9, EY + 0.05, 0, i * Math.PI / 3 + 0.3, 0, 0).multiply(at(0, 1.26, 0, 0, 0, 0.1)));
   [-1, 1].forEach((s) => add('boite', 'Conduite de refroidissement d’ATF', C.steel, tube([[9.4, 3.3, s * 1.6], [13, 2.4, s * 2.6], [18.6, 2.5, s * 3.4], [19.9, 3.4, s * 4.6]], 0.08)));
+  add('boite', 'Tube de remplissage d’ATF', C.steel, tube([[9.6, 3.5, -1.3], [10.6, 4.6, -1.6], [11.3, 6.6, -1.7], [11.4, 8.2, -1.6]], 0.1)); add('boite', 'Tube de remplissage d’ATF', C.red, cy(0.18, 0.3, 10), at(11.4, 8.35, -1.6));
   add('boite', 'Carter d’huile de boîte (ATF)', C.steel, box(3.6, 0.45, 2.5), at(8.4, 2.55, 0)); add('boite', 'Prise électrique de boîte (platine)', C.plastic, cz(0.28, 0.5, 10), at(8.0, 3.7, 1.55));
   add('boite', 'Traverse de boîte', C.steel, box(0.9, 0.4, 8.2), at(5.6, 2.75, 0));
   add('boite', 'Flector avant', C.rubber, cx(0.62, 0.35, 16), at(4.85, 3.85, 0)); add('boite', 'Arbre de transmission', C.steel, cx(0.34, 7.4, 14), at(1, 3.85, 0)); add('boite', 'Palier central d’arbre', C.rubber, cx(0.55, 0.5, 14), at(-2.9, 3.85, 0));
