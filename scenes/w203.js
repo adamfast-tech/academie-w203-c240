@@ -70,60 +70,64 @@ export function mount(el) {
   const add = (sys, name, color, geo, m) => { if (Array.isArray(geo)) { m = geo[1]; geo = geo[0]; } S[sys].push([geo, m || null, name, color]); };
   const cone = (r1, r2, len) => new THREE.CylinderGeometry(r2, r1, len, 16).rotateX(Math.PI / 2);
 
-  /* Moteur M112 : V6 longitudinal, vilebrequin dans l'axe de la voiture */
-  const EX = 15.2, EY = 3.75, Q = Math.PI / 4, bank = (d, s) => [EY + d * Math.cos(Q), s * d * Math.sin(Q)];
-  add('m112', 'Bloc-cylindres en aluminium', C.alu, box(6.2, 2.5, 3.4), at(EX, EY + 0.1, 0));
-  add('m112', 'Carter d’huile', C.cast, box(3.2, 1.25, 2.6), at(13.9, 2.55, 0)); add('m112', 'Carter d’huile', C.cast, box(2.8, 0.5, 2.6), at(16.8, 2.95, 0));
+  /* Moteur M112 : V6 longitudinal à 90°, vilebrequin dans l'axe de la voiture.
+     Géométrie d'un banc : d = distance depuis l'axe du vilebrequin le long du banc, w = décalage perpendiculaire (positif vers le creux du V). */
+  const EX = 15.2, EY = 3.75, Q = Math.PI / 4, R2 = Math.SQRT1_2, P = (d, w, s) => [EY + (d + w) * R2, s * (d - w) * R2];
+  add('m112', 'Bloc-cylindres en aluminium', C.alu, box(6.2, 1.5, 3.2), at(EX, 3.75, 0));
+  add('m112', 'Carter d’huile', C.cast, box(3.2, 1.55, 2.6), at(13.9, 2.225, 0)); add('m112', 'Carter d’huile', C.cast, box(2.8, 0.35, 2.6), at(16.8, 2.85, 0));
   add('m112', 'Poulie de vilebrequin (damper)', C.steel, cx(0.85, 0.45, 24), at(18.55, EY, 0));
   [-1, 1].forEach((s) => {
-    const side = s > 0 ? 'droit' : 'gauche', [by, bz] = bank(2.2, s), [hy, hz] = bank(3.75, s), [cy2, cz2] = bank(4.55, s), [ey, ez] = bank(3.3, s);
-    add('m112', 'Bloc-cylindres en aluminium', C.alu, box(6, 2.4, 2.3), at(EX, by, bz, s * Q));
-    add('m112', 'Culasse ' + side, C.cast, box(6.1, 1.25, 2.5), at(EX, hy, hz, s * Q));
-    add('m112', 'Couvre-culasse ' + side, C.dark, box(6.15, 0.55, 2.3), at(EX, cy2, cz2, s * Q));
+    const side = s > 0 ? 'droit' : 'gauche', [by, bz] = P(1.45, 0, s), [hy, hz] = P(2.85, 0, s), [cy2, cz2] = P(3.65, 0.05, s), [ky, kz] = P(3.95, 0.25, s);
+    add('m112', 'Bloc-cylindres en aluminium', C.alu, box(6, 1.7, 1.4), at(EX, by, bz, s * Q));
+    add('m112', 'Culasse ' + side, C.cast, box(6.1, 1.2, 1.75), at(EX, hy, hz, s * Q));
+    add('m112', 'Couvre-culasse ' + side, C.dark, box(6.15, 0.4, 1.5), at(EX, cy2, cz2, s * Q));
+    const [iy, iz] = P(2.95, 0.875, s), [ey, ez] = P(2.95, -0.875, s);
     for (let i = -1; i <= 1; i++) {
-      add('m112', 'Bobine d’allumage à double sortie', C.plastic, box(0.75, 0.35, 0.9), at(EX + i * 1.95, cy2 + 0.3, cz2 + s * 0.3, s * Q));
-      add('m112', 'Conduit du collecteur d’admission', C.mag, seg([EX + i * 1.9, 7.05, s * 0.9], [EX + i * 1.9, hy + 0.35, hz - s * 0.75], 0.36, 10));
-      add('m112', 'Collecteur d’échappement ' + side, C.hot, tube([[EX + i * 1.9, ey - 0.5, ez + s * 0.95], [EX + i * 1.9 - 0.3, ey - 1, ez + s * 1.45], [13.2 - i * 0.1, 3.5, s * 3.1], [12.2, 3.05, s * 2.2]], 0.2));
+      add('m112', 'Bobine d’allumage à double sortie', C.plastic, box(0.75, 0.3, 0.9), at(EX + i * 1.95, ky, kz, s * Q));
+      add('m112', 'Conduit du collecteur d’admission', C.mag, seg([EX + i * 1.9, 7.05, s * 0.85], [EX + i * 1.9, iy, iz], 0.34, 10));
+      add('m112', 'Collecteur d’échappement ' + side, C.hot, tube([[EX + i * 1.9, ey, ez], [EX + i * 1.9 - 0.3, ey - 0.5, ez + s * 0.45], [13.2 - i * 0.1, 3.6, s * 3.1], [12.3, 3.1, s * 2.5]], 0.2));
+      add('m112', 'Injecteur', C.gold, seg([EX + i * 1.9, 6.9, s * 1.3], [EX + i * 1.9, 6.5, s * 1.5], 0.13, 8));
     }
-    add('m112', 'Catalyseur ' + side, C.exh, cx(0.72, 2.6, 16), at(10.4, 2.75, s * 1.75)); add('m112', 'Catalyseur ' + side, C.exh, tube([[12.2, 3.05, s * 2.2], [11.9, 2.85, s * 1.9], [11.7, 2.75, s * 1.75]], 0.3));
-    add('m112', 'Sonde lambda', C.gold, seg([11.6, 2.9, s * 1.9], [11.5, 3.5, s * 2.3], 0.08, 6));
-    add('m112', 'Ligne d’échappement', C.exh, tube([[9.1, 2.75, s * 1.75], [6, 2.5, s * 1.6], [-2, 2.5, s * 1.5], [-4.2, 2.6, s * 0.7]], 0.26));
-    add('m112', 'Réservoir de carburant', C.plastic, box(4.4, 1.5, 4.2), at(-8.9, 3.6, s * 3.5));
+    add('m112', 'Rampe d’injection ' + side + 'e', C.steel, cx(0.16, 5.4, 8), at(EX, 6.95, s * 1.3));
+    add('m112', 'Catalyseur ' + side, C.exh, cx(0.72, 2.6, 16), at(10.4, 2.4, s * 2.3)); add('m112', 'Catalyseur ' + side, C.exh, tube([[12.3, 3.1, s * 2.5], [12.0, 2.75, s * 2.4], [11.7, 2.4, s * 2.3]], 0.3));
+    add('m112', 'Sonde lambda', C.gold, seg([12.6, 3.35, s * 2.85], [12.75, 3.85, s * 3.25], 0.08, 6));
+    add('m112', 'Ligne d’échappement', C.exh, tube([[9.1, 2.4, s * 2.3], [6, 2.45, s * 1.8], [-2, 2.5, s * 1.5], [-4.2, 2.6, s * 0.7]], 0.26));
+    add('m112', 'Réservoir de carburant', C.plastic, box(4.4, 1.5, 3.8), at(-8.9, 3.6, s * 3.3));
+    add('m112', 'Durite de reniflard ' + side + 'e', C.rubber, tube([[13.2, cy2 + 0.15, s * (Math.abs(cz2) - 0.3)], [12.7, 7.5, s * 1.9], [12.4, 7.55, s * 0.8], [12.3, 7.45, s * 0.25]], 0.12));
+    add('m112', 'Clapet d’air secondaire ' + side, C.alu, cy(0.28, 0.55, 10), at(18.2, 6.75, s * 1.2)); add('m112', 'Conduit d’air secondaire', C.rubber, tube([[18.55, 7.1, s * 0.6], [18.4, 7.0, s * 0.95], [18.2, 6.85, s * 1.2]], 0.1));
+    add('m112', 'Conduit d’air frais ' + side, C.plastic, tube([[20.2, 6.6, s * 3.0], [19.5, 7.2, s * 3.0], [18.6, 7.55, s * 2.6], [17.8, 7.75, s * 2.2]], 0.45));
   });
-  add('m112', 'Collecteur d’admission en magnésium', C.mag, box(5.2, 0.95, 2.1), at(EX - 0.1, 7.2, 0)); add('m112', 'Réservoir de carburant', C.plastic, box(4.4, 0.5, 3), at(-8.9, 4.4, 0));
+  add('m112', 'Collecteur d’admission en magnésium', C.mag, box(5.2, 0.95, 2.1), at(EX - 0.1, 7.2, 0)); add('m112', 'Réservoir de carburant', C.plastic, box(4.4, 0.5, 3), at(-8.9, 4.75, 0));
   /* Admission (implantation recoupée : boîtier de filtre sur le moteur, débitmètre à l'arrière, papillon à l'arrière du collecteur) */
-  [-1, 1].forEach((s) => { add('m112', 'Conduit d’air frais ' + (s > 0 ? 'droit' : 'gauche'), C.plastic, tube([[21.2, 7.5, s * 3.6], [19.8, 7.9, s * 3.4], [18.6, 8.05, s * 2.7], [17.7, 8.0, s * 2.2]], 0.5));
-    add('m112', 'Durite de reniflard ' + (s > 0 ? 'droite' : 'gauche'), C.rubber, tube([[13.6, 7.25, s * 3.0], [12.9, 7.5, s * 2.2], [12.5, 7.55, s * 0.8], [12.35, 7.45, s * 0.25]], 0.12));
-    add('m112', 'Rampe d’injection ' + (s > 0 ? 'droite' : 'gauche'), C.steel, cx(0.16, 5.4, 8), at(EX, 6.75, s * 1.5)); for (let i = -1; i <= 1; i++) add('m112', 'Injecteur', C.gold, seg([EX + i * 1.9, 6.7, s * 1.5], [EX + i * 1.9, 6.25, s * 1.95], 0.14, 8));
-    add('m112', 'Clapet d’air secondaire ' + (s > 0 ? 'droit' : 'gauche'), C.alu, cy(0.3, 0.6, 10), at(18.1, 6.5, s * 1.25)); add('m112', 'Conduit d’air secondaire', C.rubber, tube([[18.35, 6.75, s * 0.5], [18.3, 6.8, s * 0.95], [18.1, 6.75, s * 1.25]], 0.1)); });
-  add('m112', 'Boîtier de filtre à air', C.plastic, box(5.6, 0.85, 5.4), at(15.1, 8.1, 0)); add('m112', 'Boîtier de filtre à air', C.dark, box(4.2, 0.2, 3.6), at(15.1, 8.6, 0));
-  add('m112', 'Débitmètre d’air massique', C.alu, cx(0.5, 0.9, 16), at(12.3, 8.0, 0)); add('m112', 'Coude d’admission', C.rubber, tube([[11.85, 8.0, 0], [11.5, 7.85, 0], [11.45, 7.4, 0], [11.75, 7.05, 0]], 0.46));
-  add('m112', 'Boîtier papillon', C.alu, cx(0.52, 0.7, 16), at(12.15, 7.0, 0)); add('m112', 'Boîtier papillon', C.dark, box(0.6, 0.7, 0.6), at(12.15, 7.0, -0.75));
-  add('m112', 'Pompe à air secondaire', C.dark, cz(0.55, 1.5, 16), at(18.35, 6.75, 0));
-  add('m112', 'Boîtier de thermostat', C.alu, cy(0.42, 0.7, 12), at(18.2, 5.95, -0.6, 0, 0, 1.2)); add('m112', 'Sonde de température de liquide', C.gold, cy(0.11, 0.5, 8), at(18.0, 6.2, -0.15));
-  add('m112', 'Pompe à eau', C.alu, cx(0.95, 0.7, 20), at(18.45, 5.0, 0)); add('m112', 'Pompe à eau', C.steel, cx(0.7, 0.3, 20), at(18.85, 5.0, 0));
-  add('m112', 'Tendeur de courroie', C.steel, cx(0.5, 0.35, 16), at(18.8, 6.45, 1.2)); add('m112', 'Galet enrouleur', C.steel, cx(0.45, 0.35, 16), at(18.8, 6.5, -1.2));
-  add('m112', 'Filtre à carburant', C.alu, cx(0.5, 1.9, 14), at(-9.6, 2.85, -5.6)); add('m112', 'Pompe à carburant (dans le réservoir)', C.gold, cy(0.42, 1.3, 12), at(-8.9, 3.6, 3.5));
-  add('m112', 'Conduite de carburant', C.cu, tube([[-8.9, 4.1, 3.5], [-8.9, 4.5, 0], [-9.3, 3.4, -4.6], [-9.6, 2.85, -5.1]], 0.07)); add('m112', 'Conduite de carburant', C.cu, tube([[-8.7, 2.85, -5.6], [0, 2.3, -5.4], [10, 2.6, -4.6], [12, 5.4, -2.6], [12.6, 6.7, -1.5]], 0.07));
-  add('m112', 'Filtre à huile', C.dark, cy(0.42, 1.3, 14), at(17.7, 6.3, -1.45));
-  add('m112', 'Courroie d’accessoires', C.rubber, tube([[18.75, EY - 0.85, 0], [18.75, 3.0, -2.2], [18.75, 4.0, -3.3], [18.75, 5.6, -3.2], [18.75, 6.5, -1.2], [18.75, 6.4, 1.2], [18.75, 5.5, 3.3], [18.75, 4.3, 3.2], [18.75, 3.4, 1.4]], 0.07, true));
+  add('m112', 'Boîtier de filtre à air', C.plastic, box(5.6, 0.75, 5.0), at(15.1, 8.05, 0)); add('m112', 'Boîtier de filtre à air', C.dark, box(4.2, 0.15, 3.6), at(15.1, 8.5, 0));
+  add('m112', 'Débitmètre d’air massique', C.alu, cx(0.5, 0.9, 16), at(11.8, 8.0, 0)); add('m112', 'Coude d’admission', C.rubber, tube([[11.35, 8.0, 0], [11.0, 7.85, 0], [10.95, 7.4, 0], [11.4, 7.02, 0]], 0.44));
+  add('m112', 'Boîtier papillon', C.alu, cx(0.52, 0.7, 16), at(12.1, 7.0, 0)); add('m112', 'Boîtier papillon', C.dark, box(0.6, 0.7, 0.6), at(12.1, 7.0, -0.75));
+  /* Façade : courroie unique, poulies et accessoires (vue de face : pompe de direction et compresseur à gauche, alternateur à droite) */
+  add('m112', 'Pompe à air secondaire', C.dark, cz(0.5, 1.3, 16), at(18.55, 7.1, 0));
+  add('m112', 'Boîtier de thermostat', C.alu, cy(0.38, 0.6, 12), at(18.45, 6.25, -0.55, 0, 0, 1.2)); add('m112', 'Sonde de température de liquide', C.gold, cy(0.1, 0.45, 8), at(18.3, 6.25, -1.05));
+  add('m112', 'Pompe à eau', C.alu, cx(0.8, 0.5, 20), at(18.45, 5.35, 0)); add('m112', 'Pompe à eau', C.steel, cx(0.5, 0.25, 20), at(18.8, 5.35, 0));
+  add('m112', 'Tendeur de courroie', C.steel, cx(0.45, 0.3, 16), at(18.75, 6.3, 1.6)); add('m112', 'Galet enrouleur', C.steel, cx(0.4, 0.3, 16), at(18.75, 5.75, -1.45));
+  add('m112', 'Filtre à huile', C.dark, cy(0.42, 1.2, 14), at(18.6, 6.95, -2.0)); add('m112', 'Filtre à huile', C.cast, cy(0.48, 0.2, 14), at(18.6, 7.6, -2.0));
+  add('m112', 'Courroie d’accessoires', C.rubber, tube([[18.75, 2.9, 0], [18.75, 2.4, -2.7], [18.75, 3.0, -3.3], [18.75, 4.75, -3.45], [18.75, 5.3, -2.9], [18.75, 6.15, -1.45], [18.75, 5.85, 0], [18.75, 6.75, 1.6], [18.75, 4.95, 3.5], [18.75, 4.15, 2.9], [18.75, 3.75, 0.85]], 0.07, true));
+  add('m112', 'Filtre à carburant', C.alu, cx(0.5, 1.9, 14), at(-9.6, 2.5, -5.9)); add('m112', 'Pompe à carburant (dans le réservoir)', C.gold, cy(0.42, 1.3, 12), at(-8.9, 3.6, 3.3));
+  add('m112', 'Conduite de carburant', C.cu, tube([[-8.9, 4.25, 3.3], [-8.9, 5.05, 0], [-9.3, 3.4, -4.6], [-9.6, 2.6, -5.4]], 0.07)); add('m112', 'Conduite de carburant', C.cu, tube([[-8.65, 2.5, -5.9], [0, 2.3, -5.4], [10, 2.6, -4.6], [12, 5.4, -2.6], [12.5, 6.95, -1.3]], 0.07));
   add('m112', 'Silencieux central', C.exh, cx(1, 4.6, 18), at(-6.4, 2.7, 0, 0, 0, 0, 1, 0.6, 2.1));
   add('m112', 'Ligne d’échappement', C.exh, tube([[-8.7, 2.7, 0], [-10.4, 2.6, -1.6], [-12.6, 2.45, -2.6], [-15, 2.9, -3.2], [-16.2, 3.2, -3.4]], 0.3));
   add('m112', 'Silencieux arrière', C.exh, cx(1.15, 5, 18), at(-18.6, 3.3, -3.6, 0, 0, 0, 1, 0.72, 1.8)); add('m112', 'Sortie d’échappement', C.white, cx(0.42, 1.1, 16), at(-21.9, 2.8, -4.6, 0, 0, 0, 1, 0.75, 1));
-  add('m112', 'Radiateur', C.alu, box(0.42, 4.2, 10.6), at(19.95, 5, 0)); add('m112', 'Ventilateur électrique', C.dark, cx(1.95, 0.35, 28), at(19.45, 5, 0)); for (let i = 0; i < 7; i++) add('m112', 'Ventilateur électrique', C.plastic, box(0.1, 1.5, 0.5), at(19.25, 5, 0, i * 0.8976 + 0.3, 0, 0, 1, 1, 1));
-  add('m112', 'Durite supérieure', C.rubber, tube([[19.7, 6.7, -2.6], [19.1, 6.8, -2.4], [18.5, 6.4, -1.2], [18.3, 5.9, -0.6]], 0.24)); add('m112', 'Durite inférieure', C.rubber, tube([[19.7, 3.4, 2.8], [18.9, 3.2, 2.2], [18.6, 3.5, 1.2]], 0.24));
-  add('m112', 'Vase d’expansion', C.white, new THREE.SphereGeometry(0.95, 16, 12), at(16.7, 6.9, 5.7, 0, 0, 0, 1.15, 0.85, 1)); add('m112', 'Bouchon du vase d’expansion', C.dark, cy(0.32, 0.3, 12), at(16.7, 7.8, 5.7)); add('m112', 'Durite du vase d’expansion', C.rubber, tube([[16.9, 6.2, 5.3], [18, 5.4, 3.6], [18.5, 5.0, 1.0]], 0.12));
-  add('m112', 'Vanne EGR', C.alu, cy(0.4, 0.8, 12), at(12.2, 6.0, 2.7)); add('m112', 'Tube EGR', C.steel, tube([[12.2, 6.4, 2.7], [12.3, 6.9, 1.8], [12.9, 7.1, 1.0]], 0.12));
+  add('m112', 'Radiateur', C.alu, box(0.42, 3.8, 10.6), at(19.95, 4.8, 0)); add('m112', 'Ventilateur électrique', C.dark, cx(1.9, 0.35, 28), at(19.45, 4.8, 0)); for (let i = 0; i < 7; i++) add('m112', 'Ventilateur électrique', C.plastic, box(0.1, 1.5, 0.5), at(19.25, 4.8, 0, i * 0.8976 + 0.3, 0, 0, 1, 1, 1));
+  add('m112', 'Durite supérieure', C.rubber, tube([[19.75, 6.55, -2.4], [19.3, 6.8, -1.8], [18.9, 6.6, -1.0], [18.6, 6.35, -0.7]], 0.24)); add('m112', 'Durite inférieure', C.rubber, tube([[19.75, 3.5, 2.6], [19.1, 3.6, 2.0], [18.75, 4.4, 1.0], [18.55, 4.9, 0.5]], 0.24));
+  add('m112', 'Vase d’expansion', C.white, new THREE.SphereGeometry(0.95, 16, 12), at(16.6, 7.0, 5.2, 0, 0, 0, 1.15, 0.7, 0.9)); add('m112', 'Bouchon du vase d’expansion', C.dark, cy(0.32, 0.3, 12), at(16.6, 7.75, 5.2)); add('m112', 'Durite du vase d’expansion', C.rubber, tube([[16.8, 6.6, 4.8], [17.8, 6.0, 3.8], [18.4, 5.4, 1.0]], 0.12));
+  add('m112', 'Vanne EGR', C.alu, cy(0.38, 0.75, 12), at(11.75, 5.7, 2.6)); add('m112', 'Tube EGR', C.steel, tube([[11.75, 6.05, 2.6], [11.9, 6.8, 1.9], [12.55, 7.15, 1.1]], 0.12));
 
   /* Boîte 722.6 et transmission */
   add('boite', 'Carter de convertisseur de couple', C.alu, new THREE.CylinderGeometry(1.2, 2.05, 1.7, 28).rotateZ(Math.PI / 2), at(11.2, EY + 0.1, 0));
   add('boite', 'Boîte automatique 722.6 (5 rapports)', C.alu, new THREE.CylinderGeometry(0.95, 1.5, 5.4, 24).rotateZ(Math.PI / 2), at(7.7, EY + 0.05, 0));
   for (let i = 0; i < 6; i++) add('boite', 'Boîte automatique 722.6 (5 rapports)', C.cast, box(4.6, 0.1, 0.1), at(7.9, EY + 0.05, 0, i * Math.PI / 3 + 0.3, 0, 0).multiply(at(0, 1.26, 0, 0, 0, 0.1)));
   [-1, 1].forEach((s) => add('boite', 'Conduite de refroidissement d’ATF', C.steel, tube([[9.4, 3.3, s * 1.6], [13, 2.4, s * 2.6], [18.6, 2.5, s * 3.4], [19.9, 3.4, s * 4.6]], 0.08)));
-  add('boite', 'Carter d’huile de boîte (ATF)', C.steel, box(3.6, 0.45, 2.5), at(8.4, 2.55, 0)); add('boite', 'Prise électrique de boîte (platine)', C.plastic, cz(0.28, 0.5, 10), at(9.3, 3.2, 1.45));
+  add('boite', 'Carter d’huile de boîte (ATF)', C.steel, box(3.6, 0.45, 2.5), at(8.4, 2.55, 0)); add('boite', 'Prise électrique de boîte (platine)', C.plastic, cz(0.28, 0.5, 10), at(8.0, 3.7, 1.55));
   add('boite', 'Traverse de boîte', C.steel, box(0.9, 0.4, 8.2), at(5.6, 2.75, 0));
   add('boite', 'Flector avant', C.rubber, cx(0.62, 0.35, 16), at(4.85, 3.85, 0)); add('boite', 'Arbre de transmission', C.steel, cx(0.34, 7.4, 14), at(1, 3.85, 0)); add('boite', 'Palier central d’arbre', C.rubber, cx(0.55, 0.5, 14), at(-2.9, 3.85, 0));
-  add('boite', 'Arbre de transmission', C.steel, cx(0.34, 7.2, 14), at(-6.7, 3.8, 0)); add('boite', 'Flector arrière', C.rubber, cx(0.62, 0.35, 16), at(-10.45, 3.75, 0));
+  add('boite', 'Arbre de transmission', C.steel, cx(0.34, 6.5, 14), at(-6.35, 3.8, 0)); add('boite', 'Flector arrière', C.rubber, cx(0.62, 0.35, 16), at(-9.75, 3.75, 0));
   add('boite', 'Pont arrière (différentiel)', C.cast, new THREE.SphereGeometry(1.35, 20, 14), at(RA + 0.4, 3.6, 0, 0, 0, 0, 1.25, 1, 1.15)); add('boite', 'Pont arrière (différentiel)', C.cast, cx(0.7, 1.2, 16), at(RA + 1.9, 3.7, 0));
   [-1, 1].forEach((s) => { add('boite', 'Demi-arbre de roue', C.steel, seg([RA, 3.5, s * 1.5], [RA, WR, s * 6.1], 0.24, 10)); add('boite', 'Soufflet de cardan', C.rubber, cone(0.62, 0.3, 1), at(RA, 3.45, s * 2.1, 0, s > 0 ? 0 : Math.PI, 0)); add('boite', 'Soufflet de cardan', C.rubber, cone(0.3, 0.62, 1), at(RA, WR + 0.05, s * 5.5, 0, s > 0 ? 0 : Math.PI, 0)); });
 
@@ -140,10 +144,10 @@ export function mount(el) {
       add('suspension', 'Amortisseur avant (jambe de force)', C.dark, seg([x - 0.1, 3.4, s * 6.05], [x - 0.35, 6.2, zt], 0.34, 12)); add('suspension', 'Amortisseur avant (jambe de force)', C.white, seg([x - 0.35, 6.2, zt], [x - 0.5, 8.05, s * 5.6], 0.13, 8));
       add('suspension', 'Ressort avant', C.blue, helix(0.78, 2.5, 5), at(x - 0.36, 5.5, s * 5.72, s * -0.1, 0, 0.1)); add('suspension', 'Coupelle et butée de jambe de force', C.rubber, cy(0.95, 0.3, 18), at(x - 0.5, 8.1, s * 5.6));
       add('suspension', 'Bras inférieur avant (tirant)', C.steel, seg([x + 0.1, 2.2, s * 6.3], [x + 0.3, 2.35, s * 2.9], 0.2, 8)); add('suspension', 'Bras de poussée avant', C.steel, seg([x - 0.1, 2.25, s * 6.2], [x + 3.3, 2.5, s * 3.3], 0.2, 8));
-      add('suspension', 'Rotule de suspension', C.dark, new THREE.SphereGeometry(0.3, 10, 8), at(x, 2.25, s * 6.3));
+      add('suspension', 'Rotule de suspension', C.dark, new THREE.SphereGeometry(0.3, 10, 8), at(x, 1.85, s * 6.3));
       add('suspension', 'Biellette de barre stabilisatrice', C.steel, seg([x + 1.0, 2.9, s * 5.7], [x + 0.3, 5.1, s * 5.9], 0.09, 6));
-      add('direction', 'Biellette de direction', C.steel, seg([16.5, 2.45, s * 4.7], [x + 1.1, 2.75, s * 6.35], 0.11, 8)); add('direction', 'Rotule de direction', C.dark, new THREE.SphereGeometry(0.24, 10, 8), at(x + 1.1, 2.75, s * 6.35));
-      add('direction', 'Soufflet de crémaillère', C.rubber, cone(0.5, 0.2, 1.3), at(16.5, 2.45, s * 4.1, 0, s > 0 ? 0 : Math.PI, 0));
+      add('direction', 'Biellette de direction', C.steel, seg([16.5, 2.3, s * 4.7], [x + 1.1, 2.75, s * 6.35], 0.11, 8)); add('direction', 'Rotule de direction', C.dark, new THREE.SphereGeometry(0.24, 10, 8), at(x + 1.1, 2.75, s * 6.35));
+      add('direction', 'Soufflet de crémaillère', C.rubber, cone(0.5, 0.2, 1.3), at(16.5, 2.3, s * 4.1, 0, s > 0 ? 0 : Math.PI, 0));
     } else {
       add('suspension', 'Ressort arrière', C.blue, helix(0.85, 2.6, 5), at(x + 0.25, 2.75, s * 4.7)); add('suspension', 'Amortisseur arrière', C.dark, seg([x - 1.0, 2.7, s * 5.9], [x - 1.2, 5.6, s * 5.5], 0.3, 12)); add('suspension', 'Amortisseur arrière', C.white, seg([x - 1.2, 5.6, s * 5.5], [x - 1.35, 7.5, s * 5.25], 0.12, 8));
       [[1.7, 2.3, 2.4, 'Bras inférieur arrière (support de ressort)', 0.34], [-1.6, 2.5, 2.7, 'Bras de carrossage arrière', 0.15], [1.5, 4.3, 3.9, 'Bras supérieur arrière', 0.15], [-1.5, 4.2, 3.9, 'Bras supérieur arrière', 0.15], [-2.3, 3.2, 3.2, 'Bras de pincement arrière', 0.13]].forEach(([dx, y, y2, n, r]) => add('suspension', n, C.steel, seg([x + dx * 0.25, y2, s * 6.2], [x + dx, y, s * 2.9], r, 8)));
@@ -156,34 +160,34 @@ export function mount(el) {
   /* Freinage : commande hydraulique */
   add('freinage', 'Durite de dépression du servofrein', C.rubber, tube([[13.2, 7.3, -1.0], [12.6, 7.6, -2.4], [11.7, 7.4, -3.6]], 0.1));
   add('freinage', 'Servofrein', C.dark, cx(1.3, 0.85, 24), at(11.1, 7, -4.1)); add('freinage', 'Maître-cylindre', C.alu, cx(0.26, 1.5, 12), at(12.2, 7, -4.1)); add('freinage', 'Réservoir de liquide de frein', C.white, box(1, 0.6, 0.9), at(12.3, 7.5, -4.1));
-  add('freinage', 'Bloc hydraulique ABS / ESP', C.alu, box(1.2, 1.1, 1.3), at(17.6, 6, -5.4)); add('freinage', 'Bloc hydraulique ABS / ESP', C.dark, box(0.9, 0.9, 1), at(16.7, 6, -5.4));
-  [[[12.9, 6.9, -4.1], [15, 6.6, -5], [17, 6.2, -5.4]], [[17.6, 5.4, -5.4], [15.8, 4.4, -5.2], [FA - 1.6, 4.2, -5]], [[17.4, 5.4, -5], [18.6, 3.4, -2], [18.4, 3.2, 3], [16, 4, 4.9], [FA - 1.6, 4.2, 5]], [[17, 5.4, -5.4], [12, 2.5, -5.2], [0, 2.25, -5], [-9, 2.4, -4.6], [RA + 1.4, 4.2, -5]], [[-9, 2.4, -4.6], [-10.5, 4.6, -2], [-10.5, 4.6, 3], [RA + 1.4, 4.2, 5]]].forEach((pts) => add('freinage', 'Canalisation de frein', C.cu, tube(pts, 0.05)));
+  add('freinage', 'Bloc hydraulique ABS / ESP', C.alu, box(1.2, 1.1, 1.3), at(17.6, 6.6, -5.0)); add('freinage', 'Bloc hydraulique ABS / ESP', C.dark, box(0.9, 0.9, 1), at(16.7, 6.6, -5.0));
+  [[[12.9, 6.9, -4.1], [15, 6.6, -5], [17, 6.7, -5.0]], [[17.6, 6.05, -5.0], [15.8, 4.4, -5.2], [FA - 1.6, 4.2, -5]], [[17.4, 6.05, -4.6], [18.6, 3.4, -2], [18.4, 3.2, 3], [16, 4, 4.9], [FA - 1.6, 4.2, 5]], [[17, 6.05, -5.0], [12, 2.5, -5.2], [0, 2.25, -5], [-9, 2.4, -4.6], [RA + 1.4, 4.2, -5]], [[-9, 2.4, -4.6], [-10.5, 4.6, -2], [-10.5, 4.6, 3], [RA + 1.4, 4.2, 5]]].forEach((pts) => add('freinage', 'Canalisation de frein', C.cu, tube(pts, 0.05)));
   add('freinage', 'Câble de frein de stationnement', C.dark, tube([[2.5, 3.3, -0.4], [-6, 3, -1.5], [-10.5, 3.2, -3.4], [RA + 0.6, 3.4, -5.6]], 0.045)); add('freinage', 'Câble de frein de stationnement', C.dark, tube([[-6, 3, -1.5], [-9, 3.1, 1.6], [-10.5, 3.2, 3.4], [RA + 0.6, 3.4, 5.6]], 0.045));
 
   /* Direction */
-  add('direction', 'Crémaillère de direction assistée', C.alu, cz(0.36, 7.2, 14), at(16.5, 2.45, 0)); add('direction', 'Boîtier de pignon et distributeur', C.cast, cy(0.42, 1.2, 12), at(16.5, 2.9, -2.4, 0, 0, 0.5));
-  add('direction', 'Colonne de direction', C.steel, seg([16.3, 3.4, -2.5], [12.4, 5.6, -3.8], 0.13, 8)); add('direction', 'Cardan de colonne', C.dark, new THREE.SphereGeometry(0.26, 10, 8), at(12.4, 5.6, -3.8)); add('direction', 'Colonne de direction', C.steel, seg([12.4, 5.6, -3.8], [5.4, 9.05, -3.8], 0.16, 8));
+  add('direction', 'Crémaillère de direction assistée', C.alu, cz(0.36, 7.2, 14), at(16.5, 2.3, 0)); add('direction', 'Boîtier de pignon et distributeur', C.cast, cy(0.42, 1.2, 12), at(16.5, 2.75, -2.4, 0, 0, 0.5));
+  add('direction', 'Colonne de direction', C.steel, seg([16.3, 3.25, -2.5], [12.4, 5.6, -3.8], 0.13, 8)); add('direction', 'Cardan de colonne', C.dark, new THREE.SphereGeometry(0.26, 10, 8), at(12.4, 5.6, -3.8)); add('direction', 'Colonne de direction', C.steel, seg([12.4, 5.6, -3.8], [5.4, 9.05, -3.8], 0.16, 8));
   add('direction', 'Volant', C.dark, new THREE.TorusGeometry(1.45, 0.17, 8, 30).rotateY(Math.PI / 2), at(5.3, 9.1, -3.8, 0, 0, -0.46)); add('direction', 'Volant', C.dark, box(0.3, 0.5, 2.7), at(5.3, 9.1, -3.8, 0, 0, -0.46)); add('direction', 'Volant', C.dark, box(0.3, 1.4, 0.5), at(5.2, 8.5, -3.8, 0, 0, -0.46));
-  add('direction', 'Pompe de direction assistée', C.alu, cx(0.6, 1.3, 16), at(18, 5.6, -3.2)); add('direction', 'Réservoir de liquide de direction', C.plastic, cy(0.4, 0.9, 12), at(17.7, 6.5, -3.2));
-  add('direction', 'Conduite de retour de direction', C.rubber, tube([[16.5, 2.9, -2.0], [17.6, 3.6, -4.2], [18.2, 5.4, -4.0], [17.8, 6.1, -3.3]], 0.1));
-  add('direction', 'Conduite haute pression', C.rubber, tube([[17.5, 5.4, -3.2], [17.2, 4, -3.5], [16.7, 3, -2.9]], 0.08));
+  add('direction', 'Pompe de direction assistée', C.alu, cx(0.55, 1.3, 16), at(17.95, 4.75, -2.9)); add('direction', 'Pompe de direction assistée', C.steel, cx(0.55, 0.25, 16), at(18.75, 4.75, -2.9)); add('direction', 'Réservoir de liquide de direction', C.plastic, cy(0.4, 0.8, 12), at(18.1, 5.75, -3.25)); add('direction', 'Réservoir de liquide de direction', C.dark, cy(0.3, 0.15, 12), at(18.1, 6.22, -3.25));
+  add('direction', 'Conduite de retour de direction', C.rubber, tube([[16.5, 2.75, -2.0], [17.4, 3.4, -3.9], [18.0, 4.9, -3.9], [18.1, 5.4, -3.5]], 0.1));
+  add('direction', 'Conduite haute pression', C.rubber, tube([[17.3, 4.75, -2.9], [17.0, 3.9, -3.2], [16.7, 3.0, -2.7]], 0.08));
 
   /* Électricité */
   add('elec-w203', 'Batterie 12 V', C.dark, box(2.6, 1.8, 1.7), at(11.6, 6.6, 5.2)); add('elec-w203', 'Borne positive', C.red, cy(0.14, 0.3, 8), at(12.4, 7.6, 5.5)); add('elec-w203', 'Borne négative', C.white, cy(0.14, 0.3, 8), at(10.8, 7.6, 5.5));
-  add('elec-w203', 'Réservoir de lave-glace', C.white, box(1.5, 2.2, 2.2), at(19.6, 4.6, -6.3)); add('elec-w203', 'Pompe de lave-glace', C.dark, cy(0.22, 0.7, 8), at(19.2, 3.6, -5.6)); add('elec-w203', 'Tuyau de lave-glace', C.dark, tube([[19.2, 3.9, -5.6], [17, 7.6, -6.4], [12, 8.3, -5.2], [10.4, 9.0, -2.4]], 0.045));
-  add('elec-w203', 'Alternateur', C.alu, cx(0.78, 1.5, 18), at(17.9, 5.5, 3.3)); add('elec-w203', 'Démarreur', C.cast, cx(0.45, 1.9, 14), at(12.3, 3.3, 2.5)); add('elec-w203', 'Démarreur', C.cast, cx(0.28, 1.2, 10), at(12.5, 3.95, 2.7));
-  add('elec-w203', 'Câble de démarreur', C.red, tube([[12.4, 7.6, 5.5], [12.9, 6, 4.4], [12.6, 4.4, 3]], 0.09)); add('elec-w203', 'Tresse de masse', C.cu, tube([[10.8, 7.6, 5.5], [10.6, 6.6, 6.4], [10.9, 5.6, 6.6]], 0.08));
-  add('elec-w203', 'SAM avant (fusibles et relais)', C.plastic, box(1.9, 1.1, 2.3), at(12.1, 6.9, -5.6)); add('elec-w203', 'Calculateur moteur ME', C.alu, box(1.5, 1.2, 0.5), at(11.0, 7.0, -4.6));
-  add('elec-w203', 'SAM arrière (coffre)', C.plastic, box(1.8, 1.4, 0.6), at(-17.8, 5.6, -6.6)); add('elec-w203', 'Capteur de vilebrequin', C.yellow, cy(0.12, 0.5, 8), at(12.5, 4.9, -1.5));
-  add('elec-w203', 'Capteur d’arbre à cames', C.yellow, cy(0.12, 0.45, 8), at(18.2, 6.5, 2.2)); 
+  add('elec-w203', 'Réservoir de lave-glace', C.white, box(1.5, 2.2, 2.2), at(19.6, 4.6, -6.45)); add('elec-w203', 'Pompe de lave-glace', C.dark, cy(0.22, 0.7, 8), at(19.2, 3.15, -5.75)); add('elec-w203', 'Tuyau de lave-glace', C.dark, tube([[19.2, 3.4, -5.75], [17, 7.6, -6.4], [12, 8.3, -5.2], [10.4, 9.0, -2.4]], 0.045));
+  add('elec-w203', 'Alternateur', C.alu, cx(0.75, 1.5, 18), at(17.95, 4.55, 3.1)); add('elec-w203', 'Alternateur', C.steel, cx(0.4, 0.25, 14), at(18.75, 4.55, 3.1)); add('elec-w203', 'Démarreur', C.cast, cx(0.45, 1.9, 14), at(12.7, 2.55, 1.85)); add('elec-w203', 'Démarreur', C.cast, cx(0.25, 1.0, 10), at(13.0, 2.6, 2.55));
+  add('elec-w203', 'Câble de démarreur', C.red, tube([[12.4, 7.6, 5.5], [12.9, 6, 4.4], [13.2, 3.4, 3.0], [13.0, 2.75, 2.6]], 0.09)); add('elec-w203', 'Tresse de masse', C.cu, tube([[10.8, 7.6, 5.5], [10.6, 6.6, 6.4], [10.9, 5.6, 6.6]], 0.08));
+  add('elec-w203', 'SAM avant (fusibles et relais)', C.plastic, box(1.9, 1.1, 2.3), at(13.1, 7.5, -5.9)); add('elec-w203', 'Calculateur moteur ME', C.alu, box(1.5, 1.2, 0.5), at(11.4, 7.4, -6.2));
+  add('elec-w203', 'SAM arrière (coffre)', C.plastic, box(1.8, 1.4, 0.6), at(-17.8, 5.6, -6.6)); add('elec-w203', 'Capteur de vilebrequin', C.yellow, cz(0.12, 0.5, 8), at(12.25, 3.35, -1.85));
+  add('elec-w203', 'Capteur d’arbre à cames', C.yellow, cx(0.12, 0.5, 8), at(18.45, 6.25, 2.15)); 
   [-1, 1].forEach((s) => add('elec-w203', 'Faisceau principal', C.yellow, tube([[11.5, 6.4, s * 5.9], [9.6, 4, s * 6.6], [6, 2.95, s * 6.7], [-8, 2.95, s * 6.6], [-14, 4.2, s * 6.4], [-18, 5.2, s * 6.7], [-21.4, 7.4, s * 6]], 0.1)));
-  add('elec-w203', 'Faisceau moteur', C.yellow, tube([[12.1, 6.9, -5], [12, 7.3, -2], [13, 7.75, 0], [16.5, 7.75, 0.4], [18.1, 6.6, 2.2]], 0.09));
+  add('elec-w203', 'Faisceau moteur', C.yellow, tube([[12.2, 7.4, -5.0], [12.0, 7.75, -2], [13, 7.8, 0], [16.5, 7.8, 0.4], [18.3, 6.7, 2.2]], 0.09));
 
   /* Climatisation et chauffage */
-  add('clim', 'Condenseur', C.blue, box(0.25, 3.7, 10.2), at(20.55, 5, 0)); add('clim', 'Compresseur de climatisation', C.alu, cx(0.72, 1.9, 18), at(17.8, 3.6, -2.9)); add('clim', 'Bouteille déshydratante', C.alu, cy(0.4, 2.6, 12), at(20.4, 5, 5.6));
+  add('clim', 'Condenseur', C.blue, box(0.25, 3.5, 10.2), at(20.55, 4.8, 0)); add('clim', 'Compresseur de climatisation', C.alu, cx(0.72, 1.7, 18), at(17.9, 3.0, -2.7)); add('clim', 'Compresseur de climatisation', C.steel, cx(0.6, 0.25, 16), at(18.75, 3.0, -2.7)); add('clim', 'Bouteille déshydratante', C.alu, cy(0.4, 2.4, 12), at(19.9, 4.6, 5.8));
   add('clim', 'Évaporateur et bloc de chauffage', C.plastic, box(1.9, 2.4, 6.4), at(9.2, 5.9, 0.6)); add('clim', 'Filtre d’habitacle', C.white, box(1.1, 0.45, 2.6), at(10.9, 8, 3.6)); add('clim', 'Pulseur d’air', C.dark, cz(0.95, 1.3, 18), at(9.3, 6.1, 4.6));
-  add('clim', 'Conduite haute pression', C.red, tube([[18.6, 3.8, -2.9], [19.9, 4, -4.4], [20.3, 4.6, -5]], 0.09)); add('clim', 'Conduite haute pression', C.red, tube([[20.4, 6.3, 5.6], [19, 7.2, 6], [13, 7.3, 6.6], [10.4, 6.6, 3.6]], 0.08));
-  add('clim', 'Conduite basse pression', C.blue, tube([[10.3, 6.2, -1.6], [11.6, 7.4, -3], [15, 7, -4.6], [17.2, 4.6, -3.6], [17.6, 4.1, -3.1]], 0.13));
+  add('clim', 'Conduite haute pression', C.red, tube([[18.2, 3.6, -3.2], [19.9, 4, -4.4], [20.3, 4.6, -5]], 0.09)); add('clim', 'Conduite haute pression', C.red, tube([[19.9, 5.8, 5.8], [19, 7.0, 6], [13, 7.3, 6.6], [10.4, 6.6, 3.6]], 0.08));
+  add('clim', 'Conduite basse pression', C.blue, tube([[10.3, 6.2, -1.6], [11.6, 7.4, -3], [15, 7, -4.6], [17.0, 4.2, -3.6], [17.4, 3.6, -3.2]], 0.13));
   add('clim', 'Radiateur de chauffage', C.cu, box(0.5, 1.6, 2.6), at(8.5, 5, 0.6)); add('clim', 'Durites de chauffage', C.rubber, tube([[12.3, 6.4, -0.5], [10.9, 6, 0], [9.6, 5.2, 0.4]], 0.14));
   const organs = Object.keys(S).map((k) => put(merge(S[k]), M_[k], k)); car.children.forEach((o) => { if (o.isMesh && o.material === M_.disc) organs.push(o); });
   /* Catalogue des pièces : pour chacune, ses triangles dans le maillage du système et sa boîte englobante. */
